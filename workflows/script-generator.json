@@ -6,52 +6,11 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -640,
+        -704,
         -64
       ],
       "id": "65749987-e583-4887-b858-75fa6a69aff1",
       "name": "When clicking ‘Execute workflow’"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "82e790b6-bd03-4d80-aa1a-6fad4b2c6084",
-              "name": "topic",
-              "value": "Why most retirement calculators are wrong",
-              "type": "string"
-            },
-            {
-              "id": "ff252446-9b27-4929-8932-e6aea99bf8e2",
-              "name": "audience",
-              "value": "\tfirst-time investors in their 20s and 30s",
-              "type": "string"
-            },
-            {
-              "id": "dadb9162-882e-449e-9f7f-3406b618219f",
-              "name": "tone",
-              "value": "direct, warm, no jargon",
-              "type": "string"
-            },
-            {
-              "id": "ef7af547-cf90-4129-9d84-ab9f772bf94e",
-              "name": "target_seconds",
-              "value": "60",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.5,
-      "position": [
-        -416,
-        -64
-      ],
-      "id": "c84bffa0-7940-48c9-8627-54320bc60c93",
-      "name": "Input"
     },
     {
       "parameters": {
@@ -108,9 +67,15 @@
         "assignments": {
           "assignments": [
             {
+              "id": "6faabe3c-0431-4de2-8d05-166e3c21121f",
+              "name": "row_number",
+              "value": "={{ $('Next Topic').first().json.row_number }}",
+              "type": "number"
+            },
+            {
               "id": "c500fa26-e007-4649-be59-168ea1ee468b",
               "name": "topic",
-              "value": "={{ $('Input').item.json.topic }}",
+              "value": "={{ $('Next Topic').first().json.topic }}",
               "type": "string"
             },
             {
@@ -185,6 +150,246 @@
       ],
       "id": "4ca32103-38c1-4491-84e8-b39a865beb25",
       "name": "Scripts"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
+          "mode": "list",
+          "cachedResultName": "Content Calendar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "videos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -496,
+        -64
+      ],
+      "id": "dc852a4d-e5d4-4ec0-8da9-be00c64878ce",
+      "name": "Next Topic",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4DCSgHCLoMQOYUeV",
+          "name": "Google — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        -64
+      ],
+      "id": "9c6830b8-6002-47bf-97c1-b5f85b9dec66",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
+          "mode": "list",
+          "cachedResultName": "Content Calendar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "videos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "script_ready",
+            "title": "={{ $json.title }}",
+            "description": "={{ $json.description }}",
+            "tags": "={{ $json.tags.join(', ') }}",
+            "narration": "={{ $json.narration }}",
+            "slug": "={{ $json.slug }}",
+            "script_generated_at": "={{ $json.generated_at }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tone",
+              "displayName": "tone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "target_seconds",
+              "displayName": "target_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "narration",
+              "displayName": "narration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "slug",
+              "displayName": "slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "script_generated_at",
+              "displayName": "script_generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "ca5ca956-2df3-4af6-a06f-2cc90ce8d420",
+      "name": "Save Script",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4DCSgHCLoMQOYUeV",
+          "name": "Google — avatar pipeline"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -193,18 +398,7 @@
       "main": [
         [
           {
-            "node": "Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Input": {
-      "main": [
-        [
-          {
-            "node": "Basic LLM Chain",
+            "node": "Next Topic",
             "type": "main",
             "index": 0
           }
@@ -243,6 +437,39 @@
           }
         ]
       ]
+    },
+    "Next Topic": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scripts": {
+      "main": [
+        [
+          {
+            "node": "Save Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -250,7 +477,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "65c53d31-1382-4c27-8651-7fcec5c5bd51",
+  "versionId": "a572f073-840e-4bc6-92ed-9e66fc15f2a6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"

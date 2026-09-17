@@ -38,3 +38,18 @@ Open items: the model defaults to US dollars because nothing in the prompt
 sets a locale — add currency/region to the input contract once the client's
 audience is confirmed. The Gemini model ID is a preview build and should be
 pinned to a stable release, ideally via an env var, before handover.
+
+## Day 3 — 2026-09-17
+Content calendar. Google Sheet "Content Calendar" (tab: videos) is now the
+pipeline's state table — one row per video, status column driving the state
+machine (pending → script_ready → ... → published | failed).
+
+script-generator reads the next pending row, takes one via a Limit node,
+generates the script, and writes title, description, tags, narration, slug
+and timestamp back to the same row by matching on row_number.
+
+Sheets OAuth2 reuses the Day 1 OAuth client. drive.file turned out too narrow
+for the document picker — needed drive.readonly alongside spreadsheets.
+
+Zero matching rows produces an empty item array, downstream nodes skip, and
+the run finishes green. Intended behaviour for the Day 14 schedule trigger.
