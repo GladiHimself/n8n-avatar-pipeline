@@ -1,0 +1,395 @@
+{
+  "name": "async-job-pattern",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -32
+      ],
+      "id": "6ca441ea-5f28-4cb3-ac29-fc87928a3d2c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3cd49c20-c592-4b56-82ed-eba14625fdef",
+              "name": "max_attempts",
+              "value": 10,
+              "type": "number"
+            },
+            {
+              "id": "5fa20f5d-5480-4823-972b-2b2396bf3de4",
+              "name": "poll_seconds",
+              "value": "5",
+              "type": "number"
+            },
+            {
+              "id": "da60b64b-32fa-4e2e-9834-71e877abcb23",
+              "name": "simulate_failure",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -64,
+        -32
+      ],
+      "id": "52e33f13-f50a-4073-abd3-9565e92657b4",
+      "name": "Job Config"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MOCK — replaced by a real HTTP POST to HeyGen on Day 8.\n// A real submit returns a job/video ID and nothing else useful.\n\nconst config = $input.first().json;\n\n// pretend this render takes 18 seconds\nconst RENDER_MS = 18000;\n\nreturn [{\n  json: {\n    job_id: 'job_' + Math.random().toString(36).slice(2, 10),\n    submitted_at: Date.now(),\n    finishes_at: Date.now() + RENDER_MS,\n    will_fail: config.simulate_failure,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -32
+      ],
+      "id": "00816a91-ae4f-44b7-9f68-0baa5a644e3f",
+      "name": "Submit Render"
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Job Config').first().json.poll_seconds }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        -32
+      ],
+      "id": "b0b8138e-0e0e-4d55-b2fe-b25a1160989f",
+      "name": "Wait Before Poll",
+      "webhookId": "05514e94-1e8e-43f1-8185-ee608b3a7ba6"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MOCK — replaced by a real HTTP GET on Day 8.\nconst job = $('Submit Render').first().json;\nconst now = Date.now();\n\nlet status;\nif (job.will_fail)             status = 'failed';\nelse if (now >= job.finishes_at) status = 'completed';\nelse                             status = 'processing';\n\nreturn [{\n  json: {\n    job_id:  job.job_id,\n    status,\n    attempt: $runIndex + 1,          // 0-based, so +1 reads naturally in logs\n    elapsed_seconds: Math.round((now - job.submitted_at) / 1000),\n    video_url: status === 'completed'\n      ? `https://example.com/renders/${job.job_id}.mp4`\n      : null,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -32
+      ],
+      "id": "4d3e952e-e1ac-4fff-a6e6-8bbc396cd7f6",
+      "name": "Check Status"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b4fce865-1267-44c3-ba5d-8bb9e67316fa"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "done"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "34b1c4fd-d4f2-46bc-8f2b-2c4d181e883a",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "76ba818d-f0e6-4714-9ac8-246f87e0c470",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "processing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "polling"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        -48
+      ],
+      "id": "9794bdda-6bb5-49f0-932c-44a26b0fc045",
+      "name": "Job Status"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1dfa9060-24ac-4b31-b735-9a851c315cab",
+              "name": "job_id",
+              "value": "={{ $json.job_id }}",
+              "type": "string"
+            },
+            {
+              "id": "b4f392e6-d355-4b4f-b7e3-dbdc41220b53",
+              "name": "video_url",
+              "value": "={{ $json.video_url }}",
+              "type": "string"
+            },
+            {
+              "id": "1066bd65-b801-4609-b101-d12ed335162b",
+              "name": "attempts_used",
+              "value": "={{ $json.attempt }}",
+              "type": "number"
+            },
+            {
+              "id": "2ef405cf-fed1-4a4b-8600-9fda8f1a31b5",
+              "name": "elapsed_seconds",
+              "value": "={{ $json.elapsed_seconds }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1088,
+        -224
+      ],
+      "id": "1d6fd6c0-3d5f-4835-be14-548066f2e58d",
+      "name": "Render Complete"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "815c5c22-8b57-4689-ac4c-f8240cefac2d",
+              "leftValue": "={{ $json.attempt }}",
+              "rightValue": "={{ $('Job Config').first().json.max_attempts }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1088,
+        144
+      ],
+      "id": "c22919a9-e4ce-4f0f-807d-42d8f77c46ca",
+      "name": "Attempts Left?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ 'Render failed for job ' + $json.job_id + ' after ' + $json.attempt + ' attempts' }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -32
+      ],
+      "id": "4b5b41d5-a281-46aa-a088-db0419f5088f",
+      "name": "Render Failed"
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ 'Render timed out: job ' + $json.job_id + ' still processing after ' + $json.attempt + ' polls (' + $json.elapsed_seconds + 's)' }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        240
+      ],
+      "id": "ad17c9d8-3915-4e67-a435-a7e3dc4780e1",
+      "name": "Render Timed Out"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Job Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Config": {
+      "main": [
+        [
+          {
+            "node": "Submit Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Render": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Poll": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status": {
+      "main": [
+        [
+          {
+            "node": "Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Status": {
+      "main": [
+        [
+          {
+            "node": "Render Complete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Attempts Left?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attempts Left?": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render Timed Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a1a4463d-48ab-4a80-808f-e35b4b4fba34",
+  "meta": {
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "hn2Q6S643gcueyq8",
+  "tags": []
+}
