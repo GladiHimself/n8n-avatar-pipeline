@@ -53,3 +53,25 @@ for the document picker — needed drive.readonly alongside spreadsheets.
 
 Zero matching rows produces an empty item array, downstream nodes skip, and
 the run finishes green. Intended behaviour for the Day 14 schedule trigger.
+
+## Day 4 — 2026-09-18
+Async job pattern, built standalone as workflows/async-job-pattern.json
+against a simulated render API so all three paths could be tested without
+burning provider credits.
+
+Submit → Wait → Poll → Switch on three outcomes (completed / failed /
+processing) → loop back to Wait while attempts remain, else Stop and Error.
+Attempt counter uses $runIndex. Poll interval and max attempts are tunables
+in a single Job Config node.
+
+Verified: success in 4 polls, immediate failure, and timeout at exactly
+max_attempts (3 of 3, no off-by-one).
+
+Gotcha: n8n stores an expression with a leading "=" in the JSON
+("={{ ... }}"). The Switch rules were saved as literal text, so no rule
+ever matched and the node routed to no output at all — a silent failure
+with no error. Look for the fx badge on the field.
+
+Day 8 replaces the two mock Code nodes with HTTP Requests against HeyGen.
+The structure doesn't change. Check then whether HeyGen supports webhook
+callbacks — if so, Wait switches to "On Webhook Call" and the loop goes away.
