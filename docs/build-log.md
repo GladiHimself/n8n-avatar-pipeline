@@ -75,3 +75,21 @@ with no error. Look for the fx badge on the field.
 Day 8 replaces the two mock Code nodes with HTTP Requests against HeyGen.
 The structure doesn't change. Check then whether HeyGen supports webhook
 callbacks — if so, Wait switches to "On Webhook Call" and the loop goes away.
+
+## Day 5 — 2026-09-21
+Split the monolith. generate-script is now a sub-workflow with a declared
+input contract (row_number, topic, audience, tone, target_seconds), opening
+with a Validate Input step that throws on a missing/short topic or an
+out-of-range target_seconds. pipeline (renamed from script-generator) is the
+orchestrator: read next pending row → call generate-script → save.
+
+Three layers of error handling:
+1. Retry — Retry On Fail on the LLM chain for transient 429s.
+2. Handle — Generate Script uses "Continue (using error output)"; failures
+   route to Mark Failed, which sets status=failed and writes the reason to
+   the row. The run stays green and moves on.
+3. Alert — error-alert workflow (Error Trigger → append to the errors tab)
+   set as the Error Workflow for pipeline and generate-script.
+
+Error workflows don't fire on manual executions. error-alert was tested with
+pinned sample data; it fires for real once the schedule trigger is live.
