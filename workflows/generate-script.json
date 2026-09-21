@@ -1,0 +1,270 @@
+{
+  "name": "generate-script",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are writing a short-form video script for a talking-head presenter.\n\nTopic: {{ $json.topic }}\nAudience: {{ $json.audience }}\nTone: {{ $json.tone }}\nTarget length: {{ $json.target_seconds }} seconds when read aloud at a natural pace (roughly {{ $json.target_seconds * 2.5 }} words total).\n\nRules:\n- The hook must land in the first 3 seconds and must not begin with a greeting or \"In this video\".\n- Write for the ear, not the page: short sentences, no bullet points, no headings, no stage directions, no emoji.\n- Use concrete numbers or a specific example rather than general claims.\n- The CTA is one sentence and asks for a comment or a follow, not a purchase.\n- The title is under 60 characters and is not clickbait.\n- The description opens with one sentence summarising the video.\n- Give 5 to 8 lowercase tags, no hashes.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -192,
+        -64
+      ],
+      "id": "09a65c9d-b59c-44d7-a5b6-f087b65b89f7",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        144
+      ],
+      "id": "79723772-d0be-4f82-8356-9a89bc36beec",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "KdfMGMAAN0lsGo7a",
+          "name": "Gemini — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"hook\": \"Your retirement calculator just lied to you about inflation.\",\n  \"body\": \"Most calculators assume a flat three percent. Real Indian CPI over the last decade swung between four and seven. On a thirty year horizon that gap is the difference between retiring at sixty and retiring at sixty-eight. Here is what to do instead: run your number three times, at four percent, six percent, and eight percent, and plan for the middle one.\",\n  \"cta\": \"What rate does your calculator default to? Tell me in the comments.\",\n  \"title\": \"Your retirement calculator is lying about inflation\",\n  \"description\": \"Most retirement calculators assume a flat inflation rate that has not matched reality for a decade. Here is a three-scenario approach that gives you an honest number.\",\n  \"tags\": [\"retirement\", \"inflation\", \"personal finance\", \"investing\", \"financial planning\"],\n  \"estimated_seconds\": 58\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        144
+      ],
+      "id": "47b5a98f-595e-41ff-b692-b8564673aff8",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6faabe3c-0431-4de2-8d05-166e3c21121f",
+              "name": "row_number",
+              "value": "={{ $('Input').first().json.row_number }}",
+              "type": "number"
+            },
+            {
+              "id": "c500fa26-e007-4649-be59-168ea1ee468b",
+              "name": "topic",
+              "value": "={{ $('Input').first().json.topic }}",
+              "type": "string"
+            },
+            {
+              "id": "bd6caa42-2a7b-4f61-89b0-fac14b511014",
+              "name": "hook",
+              "value": "={{ $json.output.hook }}",
+              "type": "string"
+            },
+            {
+              "id": "55a8afda-bfe7-4a12-bc3c-d0e3cffa2516",
+              "name": "body",
+              "value": "={{ $json.output.body }}",
+              "type": "string"
+            },
+            {
+              "id": "1362742d-3895-4cb3-b44c-981db53bfb5c",
+              "name": "cta",
+              "value": "={{ $json.output.cta }}",
+              "type": "string"
+            },
+            {
+              "id": "e626ed0a-757d-4e3b-856c-700aa4ee5de3",
+              "name": "title",
+              "value": "={{ $json.output.title }}",
+              "type": "string"
+            },
+            {
+              "id": "e6e4506e-811a-4423-b6b2-c231c71fe08d",
+              "name": "description",
+              "value": "={{ $json.output.description + \"\\n\\n---\\nThis video features an AI-generated presenter.\" }}",
+              "type": "string"
+            },
+            {
+              "id": "7d1e1fca-d57f-444c-9586-fd8e715d7634",
+              "name": "tags",
+              "value": "={{ $json.output.tags }}",
+              "type": "array"
+            },
+            {
+              "id": "a51fc941-b357-41df-8504-4e55fcfefc94",
+              "name": "narration",
+              "value": "={{ $json.output.hook }} {{ $json.output.body }} {{ $json.output.cta }}",
+              "type": "string"
+            },
+            {
+              "id": "716406d7-ad9b-4766-bd8d-f1f049618cef",
+              "name": "slug",
+              "value": "={{ $json.output.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "f8d2fbec-7e79-4eb8-8e06-eab3727eeabe",
+              "name": "generated_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "409d6d18-b833-4174-9b42-bdd5ce7a2203",
+              "name": "estimated_seconds",
+              "value": "={{ $json.output.estimated_seconds }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        96,
+        -64
+      ],
+      "id": "68f42a3d-9011-4ad2-bdb6-f8be73424f7b",
+      "name": "Scripts"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "row_number",
+              "type": "number"
+            },
+            {
+              "name": "topic"
+            },
+            {
+              "name": "audience"
+            },
+            {
+              "name": "tone"
+            },
+            {
+              "name": "target_seconds",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        -64
+      ],
+      "id": "81330601-45e5-48f4-86ee-09bc68fa81f4",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reject bad input loudly instead of letting the LLM invent content.\nconst item = $input.first().json;\nconst topic = String(item.topic ?? '').trim();\n\nif (topic.length < 5) {\n  throw new Error(\n    `Row ${item.row_number}: topic is missing or too short (\"${topic}\")`\n  );\n}\n\nif (!item.target_seconds || item.target_seconds < 15 || item.target_seconds > 180) {\n  throw new Error(\n    `Row ${item.row_number}: target_seconds must be between 15 and 180, got ${item.target_seconds}`\n  );\n}\n\nreturn [{ json: { ...item, topic } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        -64
+      ],
+      "id": "c4897638-bd15-4578-a119-758d93638964",
+      "name": "Validate Input"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scripts": {
+      "main": [
+        []
+      ]
+    },
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "MQ3QU3jbgx4pHK4e",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "35fbb381-0d10-475c-9c96-957f22fa2ee7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "AQR5yeyjAp4KzMbg",
+  "tags": []
+}

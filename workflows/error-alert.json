@@ -1,0 +1,158 @@
+{
+  "name": "error-alert",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -48
+      ],
+      "id": "9fa53d7f-2abc-487c-8054-8bec4b4715f1",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
+          "mode": "list",
+          "cachedResultName": "Content Calendar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 680240831,
+          "mode": "list",
+          "cachedResultName": "errors",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=680240831"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "logged_at": "={{ $now.toISO() }}",
+            "workflow": "={{ $json.workflow.name }}",
+            "failed_node": "={{ $json.execution.lastNodeExecuted }}",
+            "message": "={{ $json.execution.error.message }}",
+            "execution_id": "={{ $json.execution.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "logged_at",
+              "displayName": "logged_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "failed_node",
+              "displayName": "failed_node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -160,
+        -48
+      ],
+      "id": "be6645f8-e412-4a1f-91a9-00a215c23234",
+      "name": "Log Error",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4DCSgHCLoMQOYUeV",
+          "name": "Google — avatar pipeline"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Error Trigger": [
+      {
+        "json": {
+          "execution": {
+            "id": "231",
+            "url": "http://localhost:5678/execution/231",
+            "error": {
+              "message": "Example error: credentials expired",
+              "stack": "Error: Example error"
+            },
+            "lastNodeExecuted": "Generate Script",
+            "mode": "trigger"
+          },
+          "workflow": {
+            "id": "1",
+            "name": "pipeline"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "052cd4a0-32f8-42e9-bb1b-ac08fee8afbc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "MQ3QU3jbgx4pHK4e",
+  "tags": []
+}
