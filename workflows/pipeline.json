@@ -46,6 +46,8 @@
       ],
       "id": "dc852a4d-e5d4-4ec0-8da9-be00c64878ce",
       "name": "Next Topic",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "4DCSgHCLoMQOYUeV",
@@ -54,7 +56,9 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "maxItems": 3
+      },
       "type": "n8n-nodes-base.limit",
       "typeVersion": 1,
       "position": [
@@ -245,6 +249,8 @@
       ],
       "id": "ca5ca956-2df3-4af6-a06f-2cc90ce8d420",
       "name": "Save Script",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "4DCSgHCLoMQOYUeV",
@@ -268,7 +274,8 @@
             "topic": "={{ $json.topic }}",
             "audience": "={{ $json.audience }}",
             "tone": "={{ $json.tone }}",
-            "target_seconds": "={{ $json.target_seconds }}"
+            "target_seconds": "={{ $json.target_seconds }}",
+            "region": "={{ $json.region }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -321,6 +328,16 @@
               "canBeUsedToMatch": true,
               "type": "number",
               "removed": false
+            },
+            {
+              "id": "region",
+              "displayName": "region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -359,9 +376,9 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "row_number": "={{ $('Limit').first().json.row_number }}",
+            "row_number": "={{ $('Limit').item.json.row_number }}",
             "status": "failed",
-            "error": "={{ $json.error?.message ?? $json.error }}"
+            "error": "={{ ($json.error?.message ?? $json.error ?? 'unknown error').toString().replace(/ \\[line \\d+\\]$/, '') }}"
           },
           "matchingColumns": [
             "row_number"
@@ -520,6 +537,8 @@
       ],
       "id": "fab3e8bf-50fc-4b2b-9c29-3072d91a7ef3",
       "name": "Mark Failed",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "4DCSgHCLoMQOYUeV",
@@ -591,7 +610,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "57b8ee0b-5582-4c9e-9d47-f4d410a295e5",
+  "versionId": "333a0042-efcf-4c0e-8cde-76a20b371cbd",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"

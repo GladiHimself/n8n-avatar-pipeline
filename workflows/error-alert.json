@@ -99,6 +99,8 @@
       ],
       "id": "be6645f8-e412-4a1f-91a9-00a215c23234",
       "name": "Log Error",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "4DCSgHCLoMQOYUeV",
@@ -147,7 +149,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "052cd4a0-32f8-42e9-bb1b-ac08fee8afbc",
+  "versionId": "cfa066db-a98f-4ae0-a5d5-c48c5f2e1526",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
