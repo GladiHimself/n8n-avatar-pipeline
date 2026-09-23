@@ -4,7 +4,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are writing a short-form video script for a talking-head presenter.\n\nTopic: {{ $json.topic }}\nAudience: {{ $json.audience }}\nTone: {{ $json.tone }}\nTarget length: {{ $json.target_seconds }} seconds when read aloud at a natural pace (roughly {{ $json.target_seconds * 2.5 }} words total).\n\nRules:\n- The hook must land in the first 3 seconds and must not begin with a greeting or \"In this video\".\n- Write for the ear, not the page: short sentences, no bullet points, no headings, no stage directions, no emoji.\n- Use concrete numbers or a specific example rather than general claims.\n- The CTA is one sentence and asks for a comment or a follow, not a purchase.\n- The title is under 60 characters and is not clickbait.\n- The description opens with one sentence summarising the video.\n- Give 5 to 8 lowercase tags, no hashes.",
+        "text": "=You are writing a short-form video script for a talking-head presenter.\n\nTopic: {{ $json.topic }}\nAudience: {{ $json.audience }}\nTone: {{ $json.tone }}\nAudience region: {{ $json.region }}\nUse currency, units, examples and references appropriate to that region.\nIf the region is \"global\", avoid any region-specific currency and use\nneutral examples.\nTarget length: {{ $json.target_seconds }} seconds when read aloud at a natural pace (roughly {{ $json.target_seconds * 2.5 }} words total).\n\nRules:\n- The hook must land in the first 3 seconds and must not begin with a greeting or \"In this video\".\n- Write for the ear, not the page: short sentences, no bullet points, no headings, no stage directions, no emoji.\n- Use concrete numbers or a specific example rather than general claims.\n- The CTA is one sentence and asks for a comment or a follow, not a purchase.\n- The title is under 60 characters and is not clickbait.\n- The description opens with one sentence summarising the video.\n- Give 5 to 8 lowercase tags, no hashes.",
         "hasOutputParser": true,
         "batching": {}
       },
@@ -160,6 +160,9 @@
             {
               "name": "target_seconds",
               "type": "number"
+            },
+            {
+              "name": "region"
             }
           ]
         }
@@ -175,7 +178,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Reject bad input loudly instead of letting the LLM invent content.\nconst item = $input.first().json;\nconst topic = String(item.topic ?? '').trim();\n\nif (topic.length < 5) {\n  throw new Error(\n    `Row ${item.row_number}: topic is missing or too short (\"${topic}\")`\n  );\n}\n\nif (!item.target_seconds || item.target_seconds < 15 || item.target_seconds > 180) {\n  throw new Error(\n    `Row ${item.row_number}: target_seconds must be between 15 and 180, got ${item.target_seconds}`\n  );\n}\n\nreturn [{ json: { ...item, topic } }];"
+        "jsCode": "// Reject bad input loudly instead of letting the LLM invent content.\nconst item = $input.first().json;\nconst topic = String(item.topic ?? '').trim();\n\nif (topic.length < 5) {\n  throw new Error(\n    `Row ${item.row_number}: topic is missing or too short (\"${topic}\")`\n  );\n}\n\nif (!item.target_seconds || item.target_seconds < 15 || item.target_seconds > 180) {\n  throw new Error(\n    `Row ${item.row_number}: target_seconds must be between 15 and 180, got ${item.target_seconds}`\n  );\n}\n\nconst region = String(item.region ?? '').trim() || 'global';\nreturn [{ json: { ...item, topic, region } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -250,16 +253,15 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "timeSavedMode": "fixed",
-    "errorWorkflow": "MQ3QU3jbgx4pHK4e",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "35fbb381-0d10-475c-9c96-957f22fa2ee7",
+  "versionId": "b1b4e38e-5ce7-4c17-ab32-726351d5b958",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
