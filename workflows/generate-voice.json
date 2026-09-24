@@ -1,0 +1,195 @@
+{
+  "name": "generate-voice",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "row_number",
+              "type": "number"
+            },
+            {
+              "name": "slug"
+            },
+            {
+              "name": "narration"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "01e12041-d76e-42b2-b726-13fa62348a73",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst text = String(item.narration ?? '').trim();\n\nif (text.length < 20) {\n  throw new Error(`Row ${item.row_number}: narration is missing or too short`);\n}\n\n// Credit guard: ~1,500 chars is ~100 seconds of speech.\n// Anything longer is almost certainly a bug, and it would burn\n// 15% of the monthly free allowance in one call.\nif (text.length > 1500) {\n  throw new Error(\n    `Row ${item.row_number}: narration is ${text.length} chars (limit 1500) — refusing to spend credits`\n  );\n}\n\nreturn [{ json: { ...item, narration: text } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "d2d448cc-e547-4da8-9ff2-a33143a41c21",
+      "name": "Validate Narration"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "43902a63-b7e9-4f9c-ba22-561c83893855",
+              "name": "row_number",
+              "value": "={{ $('Input').first().json.row_number }}",
+              "type": "number"
+            },
+            {
+              "id": "5a298b85-4036-40e3-8e02-305f9fb43d39",
+              "name": "audio_path",
+              "value": "=/files/audio/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.mp3",
+              "type": "string"
+            },
+            {
+              "id": "6ef7ab03-196a-4328-8ec1-6048a507c24d",
+              "name": "voice_chars",
+              "value": "={{ $('Validate Narration').first().json.narration.length }}",
+              "type": "string"
+            },
+            {
+              "id": "0d9e291c-5e5a-4271-a831-aeb4b28fe519",
+              "name": "voice_generated_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        896,
+        0
+      ],
+      "id": "c13416f2-290d-4161-87df-a39aadd6446a",
+      "name": "Voice Result"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/audio/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.mp3",
+        "dataPropertyName": "audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "aca8025e-8b0a-418e-bad5-82bb1c59428e",
+      "name": "Save Audio"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=  https://api.elevenlabs.io/v1/text-to-speech/{{ $env.VOICE_ID }}?output_format=mp3_44100_128",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {{ JSON.stringify({ text: $json.narration, model_id: \"eleven_multilingual_v2\" }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "audio"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "77b9e89a-cf76-43d4-88db-5428cef95b95",
+      "name": "Synthesize Speech",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "dUHZTVysVOixSAe4",
+          "name": "ElevenLabs — avatar pipeline"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Narration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Narration": {
+      "main": [
+        [
+          {
+            "node": "Synthesize Speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Audio": {
+      "main": [
+        [
+          {
+            "node": "Voice Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Synthesize Speech": {
+      "main": [
+        [
+          {
+            "node": "Save Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1e257ef8-6873-4e7c-a747-f9f0ee7fd379",
+  "meta": {
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "YKMT9vhYX6pcLvuL",
+  "tags": []
+}
