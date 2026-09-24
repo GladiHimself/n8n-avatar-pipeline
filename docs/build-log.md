@@ -93,3 +93,35 @@ Three layers of error handling:
 
 Error workflows don't fire on manual executions. error-alert was tested with
 pinned sample data; it fires for real once the schedule trigger is live.
+
+## Day 6 — 2026-09-23
+Week 1 milestone. Topic in → structured script out → written back to the
+row, with bad input failing on its own row and the rest of the batch
+continuing.
+
+Cleared accumulated debts: deleted the Day 1 sandbox workflow; stripped
+n8n's "[line N]" suffix from the error written to the sheet; enabled
+Retry On Fail on all Google Sheets nodes; added a `region` field through
+the whole contract (sheet column → Execute Workflow mapping → sub-workflow
+input → prompt) so scripts use the right currency and examples instead of
+defaulting to dollars; raised the batch limit from 1 to 3.
+
+Documentation started while the decisions are fresh: architecture.md,
+runbook.md, and ADR 0002 on using Sheets as the state store.
+
+Verified a container restart preserves workflows, credentials and login.
+
+## Day 7 — 2026-09-24
+Voice. generate-voice sub-workflow: Input (row_number, slug, narration) →
+Validate Narration (length and credit guard) → ElevenLabs TTS via HTTP
+Request with Response Format: File → write MP3 to /files/audio → return the
+path and character count, not the binary.
+
+Pipeline now takes a row pending → script_ready → voiced in one run. Voice
+failures reuse the existing Mark Failed node.
+
+Compose: binary data mode set to filesystem, file access restricted to
+/files, env access enabled in expressions so VOICE_ID can be read from .env.
+
+Cost: ElevenLabs free plan is non-commercial. Client needs Starter (~$5/mo)
+before publishing. See ADR 0003.

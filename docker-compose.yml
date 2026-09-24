@@ -30,9 +30,11 @@ services:
       GENERIC_TIMEZONE: Asia/Kolkata
       TZ: Asia/Kolkata
       N8N_DIAGNOSTICS_ENABLED: "false"
-      # placeholders — real values land here on Day 8
+      N8N_DEFAULT_BINARY_DATA_MODE: filesystem
+      N8N_RESTRICT_FILE_ACCESS_TO: /files
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       AVATAR_ID: ${AVATAR_ID:-stock-avatar-placeholder}
-      VOICE_ID: ${VOICE_ID:-stock-voice-placeholder}
+      VOICE_ID: ${VOICE_ID}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./files:/files
