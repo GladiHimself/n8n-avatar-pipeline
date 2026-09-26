@@ -35,13 +35,31 @@ services:
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       AVATAR_ID: ${AVATAR_ID:-stock-avatar-placeholder}
       VOICE_ID: ${VOICE_ID}
+      RENDER_BASE_URL: ${RENDER_BASE_URL:-http://renderer:8080}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./files:/files
     depends_on:
       postgres:
         condition: service_healthy
+      renderer:
+        condition: service_started
+
+  # Local stand-in for HeyGen's /v3/videos API (free, no lip sync).
+  # Swap to HeyGen later: set RENDER_BASE_URL=https://api.heygen.com
+  renderer:
+    build: ./services/renderer
+    restart: unless-stopped
+    environment:
+      RENDERER_API_KEY: ${RENDERER_API_KEY}
+    ports:
+      - "127.0.0.1:8088:8080"   # only for curl tests from your Mac
+    volumes:
+      - ./files:/files:ro
+      - ./assets/avatars:/avatars:ro
+      - renders:/renders
 
 volumes:
   pg_data:
   n8n_data:
+  renders:
