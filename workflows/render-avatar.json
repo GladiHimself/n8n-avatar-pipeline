@@ -1,0 +1,511 @@
+{
+  "name": "render-avatar",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "row_number",
+              "type": "number"
+            },
+            {
+              "name": "slug"
+            },
+            {
+              "name": "audio_path"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7c6efd53-5dca-4d25-8fb8-14a16ed5d469",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst path = String(item.audio_path ?? '').trim();\nif (!path.startsWith('/files/audio/') || !path.endsWith('.mp3')) {\n  throw new Error(`Row ${item.row_number}: audio_path looks wrong (\"${path}\")`);\n}\nreturn [{ json: { ...item, audio_path: path } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "370f008d-c7a8-4022-9ca2-93b63c097940",
+      "name": "Validate Audio"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "40ff12c6-9b48-4baa-966d-bc56fa587e55",
+              "name": "poll_seconds",
+              "value": 10,
+              "type": "number"
+            },
+            {
+              "id": "bff17238-751d-43e3-a1a0-165d9912f413",
+              "name": "max_attempts",
+              "value": 30,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "ee331a63-0338-4d37-b054-fd776c1536cf",
+      "name": "Render Config"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.RENDER_BASE_URL }}/v3/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "=render-{{ $json.row_number }}-{{ $execution.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: \"avatar\", avatar_id: $env.AVATAR_ID, audio_url: $json.audio_path, aspect_ratio: \"9:16\", resolution: \"720p\", title: $json.slug + \"-\" + $json.row_number }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "b7595330-60eb-44f3-8689-3916f3869814",
+      "name": "Submit Render",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WSQITaiIJjUA5Jsu",
+          "name": "Avatar renderer — local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Render Config').first().json.poll_seconds }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "3cae5ead-f84e-41fd-b2a7-a4a11590ed1e",
+      "name": "Wait Before Poll",
+      "webhookId": "5af27b3f-7154-4096-a138-fc92f94d0cc3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "78c5efbd-8a0a-48d2-b3a2-1444df39f9f8",
+              "leftValue": "={{ $runIndex + 1 }}",
+              "rightValue": "={{ $('Render Config').first().json.max_attempts }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1616,
+        224
+      ],
+      "id": "04f9cc86-f00a-4c96-9ac4-72c7870fa67c",
+      "name": "Attempts Left?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Render timed out after {{ $('Render Config').first().json.max_attempts }} polls (video {{ $('Submit Render').first().json.data.video_id }})"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        400
+      ],
+      "id": "19768d1c-9a04-4b8b-b7b7-e1f4718d7847",
+      "name": "Render Timed Out"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Row {{ $('Input').first().json.row_number }}: render failed — {{ $json.data.failure_message }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        16
+      ],
+      "id": "dea54e20-bbf6-4018-b20a-68dd8417e1aa",
+      "name": "Render Failed"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.video_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "video"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1616,
+        -160
+      ],
+      "id": "23ec7943-e099-4d46-b8ba-aadea585300a",
+      "name": "Download Video",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/video/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.mp4",
+        "dataPropertyName": "video",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        1840,
+        -160
+      ],
+      "id": "9db0092f-7470-4284-9646-b9d9f79d52fd",
+      "name": "Save Video"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ab09bad0-195e-46d5-9af4-8309d96f686d",
+              "name": "row_number",
+              "value": "={{ $('Input').first().json.row_number }}",
+              "type": "number"
+            },
+            {
+              "id": "c81cfb09-cc3c-4150-9af8-47e4830cbc8e",
+              "name": "video_path",
+              "value": "=/files/video/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.mp4",
+              "type": "string"
+            },
+            {
+              "id": "0bae5dbc-0110-40c2-9b2c-1f6bde1362ac",
+              "name": "render_id",
+              "value": "={{ $('Submit Render').first().json.data.video_id }}",
+              "type": "string"
+            },
+            {
+              "id": "d829010f-7ce6-473e-9946-66cd731f0819",
+              "name": "video_seconds",
+              "value": "={{ $('Check Status').last().json.data.duration }}",
+              "type": "number"
+            },
+            {
+              "id": "b4ae14e5-e3bf-4793-aaa5-a5bc147e930e",
+              "name": "rendered_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2032,
+        -160
+      ],
+      "id": "3c24682d-8b63-4c71-8fd5-66f2f2733c72",
+      "name": "Render Result"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.RENDER_BASE_URL }}/v3/videos/{{ $('Submit Render').first().json.data.video_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "1ed36862-7054-4567-973a-ac936e66fc31",
+      "name": "Check Status",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WSQITaiIJjUA5Jsu",
+          "name": "Avatar renderer — local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.status }}",
+                    "rightValue": "completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "680bf6fc-a16d-4d7b-b5df-79a1135183ff"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "done"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6e4db314-bf71-49e5-931f-d0d34dbeaa2c",
+                    "leftValue": "={{ $json.data.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "868f284f-394b-49a8-8767-74861c3ec207",
+      "name": "Job Status"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Audio": {
+      "main": [
+        [
+          {
+            "node": "Render Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Config": {
+      "main": [
+        [
+          {
+            "node": "Submit Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Render": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Poll": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attempts Left?": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render Timed Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Save Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Video": {
+      "main": [
+        [
+          {
+            "node": "Render Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status": {
+      "main": [
+        [
+          {
+            "node": "Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Status": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Attempts Left?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "2162185c-8daf-4688-af16-49fa01b006fd",
+  "meta": {
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "1qYegdA6pNN1gnie",
+  "tags": []
+}
