@@ -125,3 +125,58 @@ Compose: binary data mode set to filesystem, file access restricted to
 
 Cost: ElevenLabs free plan is non-commercial. Client needs Starter (~$5/mo)
 before publishing. See ADR 0003.
+
+## Day 8 — 2026-09-26
+Avatar render. HeyGen stopped giving free API credits in Feb 2026 (now
+pay-as-you-go from $5; Avatar III ≈ $0.99 per rendered minute), so a local
+`renderer` sidecar (Python + FFmpeg) stands in with the same /v3/videos
+request and response shape. Output is a still background with an audio
+waveform and no lip sync. See ADR 0004.
+
+render-avatar sub-workflow: Input (row_number, slug, audio_path) → Validate
+Audio → Render Config → Submit Render (Header Auth + Idempotency-Key) →
+Wait → Check Status → Switch (done / failed / fallback) → Attempts Left? →
+loop back to Wait, or Stop and Error. On done: download video_url as a
+File → write MP4 to /files/video → return path, render_id and duration.
+This is the Day 4 async pattern with real HTTP calls.
+
+Pipeline now takes a row pending → script_ready → voiced → rendered in one
+run. Sheet gained video_path, render_id and video_seconds. Render failures
+reuse Mark Failed.
+
+Compose: third service `renderer` on the internal network (reached as
+renderer:8080, not localhost), RENDER_BASE_URL and RENDERER_API_KEY in .env.
+Switching to HeyGen later means changing the base URL, the credential, a
+real AVATAR_ID, and adding one upload step to /v3/assets.
+
+Snags: the credential title went into the Header Auth "Name" field, which
+must be the header name (X-Api-Key). Leftover text in expression fields
+broke the Wait amount and turned max_attempts into the string "300". A
+Switch rule without the fx badge sent `failed` to Fallback, so the loop
+polled until timeout. The VS Code preview plays MP4s without audio (no AAC
+support), so check videos in QuickTime.
+
+## Day 9 — 2026-09-29
+Post-production. n8n 2.x disables the Execute Command node by default and
+the image has no FFmpeg, so editing is a second endpoint, /v1/edits, on the
+same renderer sidecar, using the same async job shape. See ADR 0005.
+
+edit-video sub-workflow, duplicated from render-avatar: Input (row_number,
+slug, video_path, title, narration, cta, video_seconds) → Build Captions
+(Code: 5-word cues, timing estimated from character count) → Edit Config →
+Submit Edit → poll loop → download → write MP4 to /files/final → return
+final_path, final_seconds, caption count and music used.
+
+The finished video is a 1.5s title card → narration with burned-in
+captions → 2s outro card with the CTA. An optional music bed
+(assets/music/bed.mp3, at 12% volume, gitignored) plays underneath.
+
+Pipeline now reaches `edited`. Sheet gained final_path and final_seconds.
+Edit failures reuse Mark Failed.
+
+Config: EDIT_BASE_URL is separate from RENDER_BASE_URL, so moving renders
+to HeyGen won't break editing. The renderer image now installs
+fonts-dejavu-core for captions and title cards.
+
+Known limits: caption timing is estimated, not word-accurate (upgrade path:
+ElevenLabs /with-timestamps). Music must be licensed; never commit it.

@@ -36,6 +36,7 @@ services:
       AVATAR_ID: ${AVATAR_ID:-stock-avatar-placeholder}
       VOICE_ID: ${VOICE_ID}
       RENDER_BASE_URL: ${RENDER_BASE_URL:-http://renderer:8080}
+      EDIT_BASE_URL: ${EDIT_BASE_URL:-http://renderer:8080}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./files:/files
@@ -45,7 +46,7 @@ services:
       renderer:
         condition: service_started
 
-  # Local stand-in for HeyGen's /v3/videos API (free, no lip sync).
+  # Local media service: HeyGen-shaped /v3/videos (free, no lip sync) + /v1/edits post-production.
   # Swap to HeyGen later: set RENDER_BASE_URL=https://api.heygen.com
   renderer:
     build: ./services/renderer
@@ -57,6 +58,7 @@ services:
     volumes:
       - ./files:/files:ro
       - ./assets/avatars:/avatars:ro
+      - ./assets/music:/music:ro
       - renders:/renders
 
 volumes:

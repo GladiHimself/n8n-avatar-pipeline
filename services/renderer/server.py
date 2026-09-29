@@ -1,10 +1,15 @@
-"""Local stand-in for HeyGen's /v3/videos API.
+"""Local media service for the avatar pipeline.
 
-Same request/response shape as HeyGen, so n8n can switch to the real API
-by changing RENDER_BASE_URL and the API key. No lip sync: it renders the
-avatar image (or a plain background) with an audio waveform over it.
+/v3/videos  - stand-in for HeyGen's API (same request/response shape), so n8n
+              can switch to the real API by changing RENDER_BASE_URL and the
+              key. No lip sync: avatar image (or plain background) + waveform.
+/v1/edits   - post-production: burned-in captions, intro/outro cards and an
+              optional music bed. Same async job shape (submit -> poll -> url).
 """
 import json
+import shutil
+import tempfile
+import textwrap
 import os
 import subprocess
 import threading
@@ -17,6 +22,9 @@ AVATAR_DIR = "/avatars"
 AUDIO_ROOT = "/files"
 OUT_DIR = "/renders"
 PORT = 8080
+MUSIC_DIR = "/music"
+FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+BG = "0x1f2937"
 SIZES = {
     "9:16": {"720p": (720, 1280), "1080p": (1080, 1920)},
     "16:9": {"720p": (1280, 720), "1080p": (1920, 1080)},
@@ -81,6 +89,105 @@ def render(job_id, req):
                failure_message=str(exc))
 
 
+def srt_time(sec):
+    ms = int(round(sec * 1000))
+    h, ms = divmod(ms, 3600000)
+    m, ms = divmod(ms, 60000)
+    s, ms = divmod(ms, 1000)
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+
+def ffmpeg(args, timeout=600):
+    result = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *args],
+                            capture_output=True, text=True, timeout=timeout)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip()[-500:] or "ffmpeg failed")
+
+
+def probe(path, entries):
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
+                          "-show_entries", entries, "-of", "default=nw=1:nk=1", path],
+                         capture_output=True, text=True).stdout.split()
+    return out
+
+
+def card(path, text, seconds, w, h, workdir, name):
+    """A plain background card with centred, wrapped text and silent audio."""
+    txt = os.path.join(workdir, f"{name}.txt")
+    with open(txt, "w", encoding="utf-8") as f:
+        f.write("\n".join(textwrap.wrap(text.strip(), width=18)) or " ")
+    size = w // 13
+    draw = (f"drawtext=fontfile={FONT}:textfile={txt}:fontcolor=white:fontsize={size}:"
+            f"line_spacing={size // 3}:text_align=C:x=(w-text_w)/2:y=(h-text_h)/2")
+    ffmpeg(["-f", "lavfi", "-i", f"color=c={BG}:s={w}x{h}:r=25:d={seconds}",
+            "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
+            "-vf", f"{draw},format=yuv420p", "-t", str(seconds),
+            "-c:v", "libx264", "-preset", "veryfast", "-c:a", "aac", "-b:a", "128k",
+            "-shortest", path])
+
+
+def edit(job_id, req):
+    update(job_id, status="processing")
+    started = time.time()
+    workdir = tempfile.mkdtemp(prefix=f"edit-{job_id}-")
+    try:
+        src = os.path.realpath(req["video_path"])
+        if not src.startswith(AUDIO_ROOT + "/video/") or not os.path.isfile(src):
+            raise RuntimeError(f"video not found under {AUDIO_ROOT}/video: {req['video_path']}")
+        w, h = (int(v) for v in probe(src, "stream=width,height")[:2])
+
+        # 1. captions -> SRT -> burned into the main video
+        cues = req.get("cues") or []
+        srt = os.path.join(workdir, "captions.srt")
+        with open(srt, "w", encoding="utf-8") as f:
+            for i, cue in enumerate(cues, 1):
+                f.write(f"{i}\n{srt_time(float(cue['start']))} --> {srt_time(float(cue['end']))}\n"
+                        f"{str(cue['text']).strip()}\n\n")
+        main = os.path.join(workdir, "main.mp4")
+        style = ("FontName=DejaVu Sans,Bold=1,FontSize=16,PrimaryColour=&H00FFFFFF,"
+                 "OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,"
+                 "Alignment=2,MarginV=110")
+        vf = f"subtitles={srt}:force_style='{style}'" if cues else "null"
+        ffmpeg(["-i", src, "-vf", f"{vf},format=yuv420p", "-r", "25",
+                "-c:v", "libx264", "-preset", "veryfast", "-c:a", "aac", "-b:a", "128k",
+                "-ar", "44100", "-ac", "1", main])
+
+        # 2. intro / outro cards
+        intro = os.path.join(workdir, "intro.mp4")
+        outro = os.path.join(workdir, "outro.mp4")
+        card(intro, req.get("title") or " ", 1.5, w, h, workdir, "intro")
+        card(outro, req.get("outro_text") or "Follow for more", 2, w, h, workdir, "outro")
+
+        # 3. join, then lay the music bed (if any) under everything
+        music = os.path.join(MUSIC_DIR, "bed.mp3")
+        use_music = bool(req.get("music")) and os.path.isfile(music)
+        inputs = ["-i", intro, "-i", main, "-i", outro]
+        graph = ("[0:v][0:a][1:v][1:a][2:v][2:a]concat=n=3:v=1:a=1[v][voice]")
+        if use_music:
+            inputs += ["-stream_loop", "-1", "-i", music]
+            graph += (";[3:a]aformat=sample_rates=44100:channel_layouts=mono,volume=0.12[bed]"
+                      ";[voice][bed]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]")
+        else:
+            graph += ";[voice]anull[a]"
+        out = os.path.join(OUT_DIR, f"edit-{job_id}.mp4")
+        ffmpeg([*inputs, "-filter_complex", graph, "-map", "[v]", "-map", "[a]",
+                "-c:v", "libx264", "-preset", "veryfast", "-c:a", "aac", "-b:a", "128k",
+                "-movflags", "+faststart", out])
+
+        duration = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=nw=1:nk=1", out], capture_output=True, text=True).stdout.strip()
+        update(job_id, status="completed",
+               video_url=f"http://renderer:{PORT}/renders/edit-{job_id}.mp4",
+               duration=round(float(duration or 0), 2), captions=len(cues),
+               music="bed.mp3" if use_music else "none",
+               render_seconds=round(time.time() - started, 1))
+    except Exception as exc:
+        update(job_id, status="failed", failure_code="edit_error", failure_message=str(exc))
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, code, body):
         data = json.dumps(body).encode()
@@ -97,7 +204,9 @@ class Handler(BaseHTTPRequestHandler):
         return True
 
     def do_POST(self):
-        if self.path != "/v3/videos":
+        routes = {"/v3/videos": (render, ("avatar_id", "audio_url")),
+                  "/v1/edits": (edit, ("video_path",))}
+        if self.path not in routes:
             return self.send_json(404, {"error": {"code": "not_found", "message": self.path}})
         if not self.authorised():
             return
@@ -105,7 +214,8 @@ class Handler(BaseHTTPRequestHandler):
             req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
         except json.JSONDecodeError:
             return self.send_json(400, {"error": {"code": "bad_json", "message": "body is not valid JSON"}})
-        missing = [f for f in ("avatar_id", "audio_url") if not req.get(f)]
+        worker, required = routes[self.path]
+        missing = [f for f in required if not req.get(f)]
         if missing:
             return self.send_json(400, {"error": {"code": "invalid_parameter",
                                                   "message": f"missing: {', '.join(missing)}"}})
@@ -113,11 +223,11 @@ class Handler(BaseHTTPRequestHandler):
         with lock:
             jobs[job_id] = {"id": job_id, "status": "waiting", "title": req.get("title", ""),
                             "created_at": int(time.time())}
-        threading.Thread(target=render, args=(job_id, req), daemon=True).start()
+        threading.Thread(target=worker, args=(job_id, req), daemon=True).start()
         self.send_json(200, {"data": {"video_id": job_id, "status": "waiting", "output_format": "mp4"}})
 
     def do_GET(self):
-        if self.path.startswith("/v3/videos/"):
+        if self.path.startswith(("/v3/videos/", "/v1/edits/")):
             if not self.authorised():
                 return
             with lock:
