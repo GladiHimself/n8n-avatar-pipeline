@@ -1,0 +1,530 @@
+{
+  "name": "edit-video",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "row_number",
+              "type": "number"
+            },
+            {
+              "name": "slug"
+            },
+            {
+              "name": "video_path"
+            },
+            {
+              "name": "title"
+            },
+            {
+              "name": "narration"
+            },
+            {
+              "name": "cta"
+            },
+            {
+              "name": "video_seconds",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f73d9993-d9bd-492f-b7d7-9ece1b4eecdc",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Edit Config').first().json.poll_seconds }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "087f66a7-03c7-4c99-ba3b-6c4e27d1fa97",
+      "name": "Wait Before Poll",
+      "webhookId": "a83e3944-d97d-4815-bcaa-aa5a01f65f0a"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "78c5efbd-8a0a-48d2-b3a2-1444df39f9f8",
+              "leftValue": "={{ $runIndex + 1 }}",
+              "rightValue": "={{ $('Edit Config').first().json.max_attempts }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1616,
+        224
+      ],
+      "id": "06bc678e-952e-4696-866f-6fa30b0dbd31",
+      "name": "Attempts Left?"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.video_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "video"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1616,
+        -160
+      ],
+      "id": "ed88502b-579e-4382-8a07-8b9f64272993",
+      "name": "Download Video",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst path = String(item.video_path ?? '').trim();\nif (!path.startsWith('/files/video/') || !path.endsWith('.mp4')) {\n  throw new Error(`Row ${item.row_number}: video_path looks wrong (\"${path}\")`);\n}\nconst words = String(item.narration ?? '').trim().split(/\\s+/).filter(Boolean);\nconst total = Number(item.video_seconds);\nif (!words.length || !(total > 0)) {\n  throw new Error(`Row ${item.row_number}: need narration and video_seconds to build captions`);\n}\n\nconst WORDS_PER_CUE = 5;\nconst chunks = [];\nfor (let i = 0; i < words.length; i += WORDS_PER_CUE) {\n  chunks.push(words.slice(i, i + WORDS_PER_CUE).join(' '));\n}\n\n// each chunk gets screen time in proportion to its length\nconst totalChars = chunks.reduce((sum, c) => sum + c.length, 0);\nlet t = 0;\nconst cues = chunks.map(text => {\n  const dur = total * text.length / totalChars;\n  const cue = { start: Number(t.toFixed(2)), end: Number((t + dur).toFixed(2)), text };\n  t += dur;\n  return cue;\n});\n\nreturn [{ json: { ...item, video_path: path, cues, cue_count: cues.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "2df7f97f-df00-420c-8620-d1148ad9ef35",
+      "name": "Build Captions"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "40ff12c6-9b48-4baa-966d-bc56fa587e55",
+              "name": "poll_seconds",
+              "value": 5,
+              "type": "number"
+            },
+            {
+              "id": "bff17238-751d-43e3-a1a0-165d9912f413",
+              "name": "max_attempts",
+              "value": 60,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "dae888a6-5700-4154-af6a-3462fb0b80a8",
+      "name": "Edit Config"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EDIT_BASE_URL }}/v1/edits",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "=edit-{{ $json.row_number }}-{{ $execution.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ video_path: $json.video_path, title: $json.title, outro_text: $json.cta, cues: $json.cues, music: true }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "214995f4-8482-466d-9f08-61f5d50eb0ad",
+      "name": "Submit Edit",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WSQITaiIJjUA5Jsu",
+          "name": "Avatar renderer — local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.EDIT_BASE_URL }}/v1/edits/{{ $('Submit Edit').first().json.data.video_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "8c3ea640-4ec9-469b-ae88-0d61cb8f3a33",
+      "name": "Check Edit",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WSQITaiIJjUA5Jsu",
+          "name": "Avatar renderer — local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.status }}",
+                    "rightValue": "completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "680bf6fc-a16d-4d7b-b5df-79a1135183ff"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "done"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6e4db314-bf71-49e5-931f-d0d34dbeaa2c",
+                    "leftValue": "={{ $json.data.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "136e7f87-4405-4d4d-a499-f034a52608a4",
+      "name": "Edit Status"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Row {{ $('Input').first().json.row_number }}: edit failed — {{ $json.data.failure_message }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        16
+      ],
+      "id": "9fa7e6f2-90a7-4279-b008-860d46951552",
+      "name": "Edit Failed"
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Edit timed out after {{ $('Edit Config').first().json.max_attempts }} polls (edit {{ $('Submit Edit').first().json.data.video_id }})"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        400
+      ],
+      "id": "fca5b764-c97a-4aba-b89d-e6498947d02d",
+      "name": "Edit Timed Out"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/final/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.mp4",
+        "dataPropertyName": "video",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        1840,
+        -160
+      ],
+      "id": "36aad509-78ed-43ed-b0f0-748dd9b52d8b",
+      "name": "Save Final"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ab09bad0-195e-46d5-9af4-8309d96f686d",
+              "name": "row_number",
+              "value": "={{ $('Input').first().json.row_number }}",
+              "type": "number"
+            },
+            {
+              "id": "c81cfb09-cc3c-4150-9af8-47e4830cbc8e",
+              "name": "final_path",
+              "value": "=/files/final/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.mp4",
+              "type": "string"
+            },
+            {
+              "id": "0bae5dbc-0110-40c2-9b2c-1f6bde1362ac",
+              "name": "final_seconds",
+              "value": "={{ $('Check Edit').last().json.data.duration }}",
+              "type": "number"
+            },
+            {
+              "id": "d829010f-7ce6-473e-9946-66cd731f0819",
+              "name": "captions",
+              "value": "={{ $('Check Edit').last().json.data.captions }}",
+              "type": "number"
+            },
+            {
+              "id": "b4ae14e5-e3bf-4793-aaa5-a5bc147e930e",
+              "name": "music",
+              "value": "={{ $('Check Edit').last().json.data.music }}",
+              "type": "string"
+            },
+            {
+              "id": "cd722ffc-25db-4a5f-be3b-601262ede57d",
+              "name": "edited_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2032,
+        -160
+      ],
+      "id": "38fb8924-c421-4ed9-b622-1f4bf72aa2d1",
+      "name": "Edit Result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Build Captions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Poll": {
+      "main": [
+        [
+          {
+            "node": "Check Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attempts Left?": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Timed Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Save Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Captions": {
+      "main": [
+        [
+          {
+            "node": "Edit Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Config": {
+      "main": [
+        [
+          {
+            "node": "Submit Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Edit": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Edit": {
+      "main": [
+        [
+          {
+            "node": "Edit Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Status": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Attempts Left?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Final": {
+      "main": [
+        [
+          {
+            "node": "Edit Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "b1e28445-4160-46a2-9e3c-af9179f6b136",
+  "meta": {
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "d26FMrUc0wb2JhLN",
+  "tags": []
+}
