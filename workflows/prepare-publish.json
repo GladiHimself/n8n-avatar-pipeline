@@ -1,0 +1,315 @@
+{
+  "name": "prepare-publish",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "row_number",
+              "type": "number"
+            },
+            {
+              "name": "slug"
+            },
+            {
+              "name": "topic"
+            },
+            {
+              "name": "title"
+            },
+            {
+              "name": "description"
+            },
+            {
+              "name": "tags",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -752,
+        -16
+      ],
+      "id": "12eb96a4-408e-49d6-94f7-a1034a9877b1",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write thumbnail text and hashtags for a YouTube Short.\n\nTitle: {{ $json.title }}\nTopic: {{ $json.topic }}\n\nRules:\n- thumbnail_text: 2 to 4 words, punchy, readable at a glance, no emojis, no misleading clickbait\n- hashtags: exactly 3, relevant to the topic, lowercase, no spaces",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -528,
+        -16
+      ],
+      "id": "8676bb33-f74e-4b23-8a9e-2924a36d36c5",
+      "name": "Thumbnail Copy"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -592,
+        176
+      ],
+      "id": "c972245c-e34c-4dc9-846c-628315516d45",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "KdfMGMAAN0lsGo7a",
+          "name": "Gemini — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \n  \"thumbnail_text\": \"Save Before You Spend\", \n  \"hashtags\": [\"#personalfinance\", \"#savingmoney\", \"#moneytips\"] \n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        176
+      ],
+      "id": "fa71ce25-669f-408b-adef-918f0db9a24b",
+      "name": "Structured Output Parser",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const src = $('Input').first().json;\nconst ai = $input.first().json.output ?? {};\nconst DISCLOSURE = 'This video features an AI-generated presenter.';\nconst clean = s => String(s ?? '').replace(/[<>]/g, '').trim();   // YouTube rejects < and >\n\n// Title: max 100 characters\nlet title = clean(src.title);\nif (title.length > 100) title = title.slice(0, 97).trimEnd() + '...';\n\n// Hashtags: #Shorts first, no spaces/symbols, no duplicates, max 5\nconst hashtags = ['#Shorts', ...(ai.hashtags ?? [])]\n  .map(h => '#' + String(h).replace(/^#/, '').replace(/[^\\p{L}\\p{N}_]/gu, ''))\n  .filter(h => h.length > 1)\n  .filter((h, i, all) => all.findIndex(x => x.toLowerCase() === h.toLowerCase()) === i)\n  .slice(0, 5);\n\n// Description: disclosure guaranteed, hashtags at the end, max 5000 characters\nlet description = clean(src.description);\nif (!description.includes(DISCLOSURE)) description += `\\n\\n---\\n${DISCLOSURE}`;\ndescription = `${description}\\n\\n${hashtags.join(' ')}`.slice(0, 5000);\n\n// Tags: total must stay under 500 characters (tags with spaces count 2 extra for quotes)\nconst rawTags = Array.isArray(src.tags) ? src.tags : String(src.tags ?? '').split(',');\nconst tags = [];\nlet used = 0;\nfor (const tag of rawTags.map(clean).filter(Boolean)) {\n  const cost = tag.length + (tag.includes(' ') ? 2 : 0) + (tags.length ? 1 : 0);\n  if (used + cost > 500) break;\n  tags.push(tag);\n  used += cost;\n}\n\nconst thumbnail_text = clean(ai.thumbnail_text) || title.split(' ').slice(0, 4).join(' ');\n\nreturn [{ json: {\n  row_number: src.row_number,\n  slug: src.slug,\n  yt_title: title,\n  yt_description: description,\n  yt_tags: tags,\n  yt_category_id: '22',\n  thumbnail_text,\n  hashtags,\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        -16
+      ],
+      "id": "b776375c-fec5-4bd2-a394-9b215124837a",
+      "name": "Build Metadata"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c078b335-9764-40c8-8692-acd79c0dff5b",
+              "name": "row_number",
+              "value": "={{ $('Build Metadata').first().json.row_number }}",
+              "type": "number"
+            },
+            {
+              "id": "fc58421b-5d95-4d1e-b696-6636835caa63",
+              "name": "yt_title",
+              "value": "={{ $('Build Metadata').first().json.yt_title }}",
+              "type": "string"
+            },
+            {
+              "id": "26ec7f1e-721d-47c7-a370-4af70ddf3417",
+              "name": "yt_description",
+              "value": "={{ $('Build Metadata').first().json.yt_description }}",
+              "type": "string"
+            },
+            {
+              "id": "2ca66c17-d3e1-42f8-8538-7e5b0abda0bd",
+              "name": "yt_tags",
+              "value": "={{ $('Build Metadata').first().json.yt_tags }}",
+              "type": "array"
+            },
+            {
+              "id": "0702564e-d220-4b2b-9807-11004966b39b",
+              "name": "yt_category_id",
+              "value": "={{ $('Build Metadata').first().json.yt_category_id }}",
+              "type": "string"
+            },
+            {
+              "id": "aa897541-7c06-4497-a5d9-116f7e45705b",
+              "name": "thumbnail_text",
+              "value": "={{ $('Build Metadata').first().json.thumbnail_text }}",
+              "type": "string"
+            },
+            {
+              "id": "3e929e86-f40f-41d3-8fb2-63ecbc74d333",
+              "name": "thumbnail_path",
+              "value": "=/files/thumbs/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.png",
+              "type": "string"
+            },
+            {
+              "id": "7e5ee8ff-a34a-4bea-b614-e2d7e7bf72cd",
+              "name": "packaged_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        -16
+      ],
+      "id": "96c03205-9095-49d0-acc7-e41235c9c844",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EDIT_BASE_URL }}/v1/thumbnails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.thumbnail_text, subtitle: $json.hashtags[1] ?? '', avatar_id: $env.AVATAR_ID }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "thumbnail"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        32,
+        -16
+      ],
+      "id": "9b6048e3-0dc8-4b90-8d93-21eab88aa6c1",
+      "name": "Make Thumbnail",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WSQITaiIJjUA5Jsu",
+          "name": "Avatar renderer — local"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/thumbs/{{ $('Input').first().json.slug }}-{{ $('Input').first().json.row_number }}.png",
+        "dataPropertyName": "thumbnail",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -16
+      ],
+      "id": "17478739-a4b3-4060-9917-6c50883be0ea",
+      "name": "Save Thumbnail"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Thumbnail Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Thumbnail Copy",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Thumbnail Copy",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thumbnail Copy": {
+      "main": [
+        [
+          {
+            "node": "Build Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Metadata": {
+      "main": [
+        [
+          {
+            "node": "Make Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Save Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1abe3f2b-2ce9-4d3f-9574-3852f3c4960a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "2zutNtGQxWIr22tl",
+  "tags": []
+}

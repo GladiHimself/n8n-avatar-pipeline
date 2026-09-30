@@ -5,6 +5,8 @@
               key. No lip sync: avatar image (or plain background) + waveform.
 /v1/edits   - post-production: burned-in captions, intro/outro cards and an
               optional music bed. Same async job shape (submit -> poll -> url).
+/v1/thumbnails - thumbnail image. Synchronous: the response body IS the PNG,
+              because it takes well under a second (no job, no polling).
 """
 import json
 import shutil
@@ -188,6 +190,60 @@ def edit(job_id, req):
         shutil.rmtree(workdir, ignore_errors=True)
 
 
+
+def thumbnail(req):
+    """Render a PNG thumbnail and return its bytes."""
+    text = str(req.get("text") or "").strip()
+    if not text:
+        raise ValueError("text is required")
+    w, h = int(req.get("width", 1280)), int(req.get("height", 720))
+    if not (320 <= w <= 3840 and 320 <= h <= 3840):
+        raise ValueError("width/height must be between 320 and 3840")
+    image = os.path.join(AVATAR_DIR, f"{req.get('avatar_id', '')}.png")
+    has_avatar = os.path.isfile(image)
+
+    lines = textwrap.wrap(text.upper(), width=12) or [" "]
+    area_w = int(w * (0.55 if has_avatar else 0.82))
+    size = min(int(h * 0.2), int(area_w / (max(map(len, lines)) * 0.66)),
+               int(h * 0.72 / (len(lines) * 1.18)))
+    workdir = tempfile.mkdtemp(prefix="thumb-")
+    try:
+        txt = os.path.join(workdir, "text.txt")
+        with open(txt, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        filters = [f"[0:v]drawbox=x=0:y=0:w={w // 50}:h=ih:color=0xfacc15:t=fill[bg]"]
+        inputs = ["-f", "lavfi", "-i", f"color=c=0x111827:s={w}x{h}:d=1"]
+        last = "bg"
+        if has_avatar:
+            inputs += ["-i", image]
+            aw = int(w * 0.4)
+            filters.append(f"[1:v]scale={aw}:{h}:force_original_aspect_ratio=increase,crop={aw}:{h}[av]")
+            filters.append(f"[bg][av]overlay={w - aw}:0[withav]")
+            last = "withav"
+        x = w // 50 + int(w * 0.05)
+        filters.append(
+            f"[{last}]drawtext=fontfile={FONT}:textfile={txt}:fontcolor=0xfacc15:fontsize={size}:"
+            f"line_spacing={size // 6}:borderw={max(2, size // 25)}:bordercolor=black:"
+            f"x={x}:y=(h-text_h)/2[t]")
+        last = "t"
+        subtitle = str(req.get("subtitle") or "").strip()
+        if subtitle:
+            sub = os.path.join(workdir, "sub.txt")
+            with open(sub, "w", encoding="utf-8") as f:
+                f.write(subtitle[:40])
+            filters.append(
+                f"[{last}]drawtext=fontfile={FONT}:textfile={sub}:fontcolor=white:fontsize={h // 16}:"
+                f"x={x}:y=h-{h // 8}[s]")
+            last = "s"
+        out = os.path.join(workdir, "thumb.png")
+        ffmpeg([*inputs, "-filter_complex", ";".join(filters), "-map", f"[{last}]",
+                "-frames:v", "1", out], timeout=60)
+        with open(out, "rb") as f:
+            return f.read()
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, code, body):
         data = json.dumps(body).encode()
@@ -203,7 +259,24 @@ class Handler(BaseHTTPRequestHandler):
             return False
         return True
 
+    def send_png(self, data):
+        self.send_response(200)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_POST(self):
+        if self.path == "/v1/thumbnails":
+            if not self.authorised():
+                return
+            try:
+                req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+                return self.send_png(thumbnail(req))
+            except (ValueError, json.JSONDecodeError) as exc:
+                return self.send_json(400, {"error": {"code": "invalid_parameter", "message": str(exc)}})
+            except Exception as exc:
+                return self.send_json(500, {"error": {"code": "thumbnail_error", "message": str(exc)}})
         routes = {"/v3/videos": (render, ("avatar_id", "audio_url")),
                   "/v1/edits": (edit, ("video_path",))}
         if self.path not in routes:
