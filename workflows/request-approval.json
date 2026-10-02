@@ -1,0 +1,988 @@
+{
+  "name": "request-approval",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "row_number",
+              "type": "number"
+            },
+            {
+              "name": "slug"
+            },
+            {
+              "name": "final_path"
+            },
+            {
+              "name": "yt_title"
+            },
+            {
+              "name": "yt_description"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2a0e2889-6495-415e-b06d-64b04e6604a4",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.final_path }}",
+        "options": {
+          "dataPropertyName": "video"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "02018337-f1b1-4060-bf23-4ac43f47447c",
+      "name": "Read Video"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "binaryData": true,
+        "binaryPropertyName": "video",
+        "additionalFields": {
+          "caption": "=Row {{ $('Input').first().json.row_number }} · {{ $('Input').first().json.yt_title }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "e7346282-3fcf-4236-bdf7-05db2798b180",
+      "name": "Send Preview",
+      "webhookId": "2b17742f-9a16-49bb-b9ad-fcb4467c9da3",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "telegramApi": {
+          "id": "FPSY9yhBB3Yt1CTq",
+          "name": "Telegram — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
+          "mode": "list",
+          "cachedResultName": "Content Calendar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "videos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Input').first().json.row_number }}",
+            "status": "awaiting_approval"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tone",
+              "displayName": "tone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "target_seconds",
+              "displayName": "target_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "region",
+              "displayName": "region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "narration",
+              "displayName": "narration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "slug",
+              "displayName": "slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "script_generated_at",
+              "displayName": "script_generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "audio_path",
+              "displayName": "audio_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "voice_chars",
+              "displayName": "voice_chars",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_path",
+              "displayName": "video_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "render_id",
+              "displayName": "render_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_seconds",
+              "displayName": "video_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "final_path",
+              "displayName": "final_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "final_seconds",
+              "displayName": "final_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_title",
+              "displayName": "yt_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_description",
+              "displayName": "yt_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_tags",
+              "displayName": "yt_tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "thumbnail_text",
+              "displayName": "thumbnail_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "thumbnail_path",
+              "displayName": "thumbnail_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "review_decision",
+              "displayName": "review_decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "review_notes",
+              "displayName": "review_notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "reviewed_at",
+              "displayName": "reviewed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        0
+      ],
+      "id": "f9fbe498-e7a3-4ab5-b070-89e4c03b4e1d",
+      "name": "Mark Awaiting",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4DCSgHCLoMQOYUeV",
+          "name": "Google — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst fields = r.data ?? r;                       // form answers\nconst pick = name => {\n  const key = Object.keys(fields).find(k => k.toLowerCase() === name);\n  return key ? fields[key] : undefined;\n};\n\nlet decision = String(pick('decision') ?? '').trim().toLowerCase();\nif (!['approve', 'reject', 'regenerate'].includes(decision)) decision = 'expired';   // no answer in 24h\n\nconst STATUS = { approve: 'approved', reject: 'rejected', regenerate: 'pending', expired: 'review_expired' };\n\nreturn [{ json: {\n  row_number: $('Input').first().json.row_number,\n  decision,\n  status: STATUS[decision],\n  notes: String(pick('notes') ?? '').trim(),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "de05e2c4-8e60-4545-b66d-1063927bbd42",
+      "name": "Read Decision"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
+          "mode": "list",
+          "cachedResultName": "Content Calendar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "videos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "={{ $json.status }}",
+            "review_decision": "={{ $json.decision }}",
+            "review_notes": "={{ $json.notes }}",
+            "reviewed_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "audience",
+              "displayName": "audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tone",
+              "displayName": "tone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "target_seconds",
+              "displayName": "target_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "region",
+              "displayName": "region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "narration",
+              "displayName": "narration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "slug",
+              "displayName": "slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "script_generated_at",
+              "displayName": "script_generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "audio_path",
+              "displayName": "audio_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "voice_chars",
+              "displayName": "voice_chars",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_path",
+              "displayName": "video_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "render_id",
+              "displayName": "render_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_seconds",
+              "displayName": "video_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "final_path",
+              "displayName": "final_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "final_seconds",
+              "displayName": "final_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_title",
+              "displayName": "yt_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_description",
+              "displayName": "yt_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_tags",
+              "displayName": "yt_tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "thumbnail_text",
+              "displayName": "thumbnail_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "thumbnail_path",
+              "displayName": "thumbnail_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "review_decision",
+              "displayName": "review_decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "review_notes",
+              "displayName": "review_notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewed_at",
+              "displayName": "reviewed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "ce17ba80-786a-445a-8e81-8f903f019eff",
+      "name": "Save Decision",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4DCSgHCLoMQOYUeV",
+          "name": "Google — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=Row {{ $('Read Decision').first().json.row_number }} → {{ $('Read Decision').first().json.status }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        0
+      ],
+      "id": "a4d33041-1b69-48e8-a2e1-2858abc3c2a3",
+      "name": "Confirm",
+      "webhookId": "04ab2d7f-9530-46cc-9310-08a3d09a7a8b",
+      "credentials": {
+        "telegramApi": {
+          "id": "FPSY9yhBB3Yt1CTq",
+          "name": "Telegram — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=Review row {{ $('Input').first().json.row_number }}: {{ $('Input').first().json.yt_title }}  Open this link on your Mac to approve / reject / regenerate: {{ $execution.resumeFormUrl }}",
+        "additionalFields": {
+          "disable_web_page_preview": true
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "6297df4f-90b0-40c8-b4b5-c2113a5c6f9a",
+      "name": "Send Review Link",
+      "webhookId": "a06f0250-3b94-4779-9b1f-f053f04c34cc",
+      "credentials": {
+        "telegramApi": {
+          "id": "FPSY9yhBB3Yt1CTq",
+          "name": "Telegram — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Review video",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "decision",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "approve"
+                  },
+                  {
+                    "option": "reject"
+                  },
+                  {
+                    "option": "regenerate"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "notes",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "limitWaitTime": true,
+        "resumeAmount": 24,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "1d600414-8272-4ccc-80b1-5c9c376d6fd2",
+      "name": "Wait For Decision",
+      "webhookId": "8a4a8499-e6bd-4d6e-b817-17bbde3c8c7a"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Read Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video": {
+      "main": [
+        [
+          {
+            "node": "Send Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Preview": {
+      "main": [
+        [
+          {
+            "node": "Mark Awaiting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Awaiting": {
+      "main": [
+        [
+          {
+            "node": "Send Review Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Decision": {
+      "main": [
+        [
+          {
+            "node": "Save Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Decision": {
+      "main": [
+        [
+          {
+            "node": "Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Review Link": {
+      "main": [
+        [
+          {
+            "node": "Wait For Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait For Decision": {
+      "main": [
+        [
+          {
+            "node": "Read Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d10493b8-4d30-4866-8bca-f26da1ea493c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "0M3ShZmwhV4wwVpH",
+  "tags": []
+}
