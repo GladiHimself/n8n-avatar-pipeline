@@ -37,6 +37,7 @@ services:
       VOICE_ID: ${VOICE_ID}
       RENDER_BASE_URL: ${RENDER_BASE_URL:-http://renderer:8080}
       EDIT_BASE_URL: ${EDIT_BASE_URL:-http://renderer:8080}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./files:/files

@@ -1932,6 +1932,89 @@
           "name": "Google — avatar pipeline"
         }
       }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "0M3ShZmwhV4wwVpH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/0M3ShZmwhV4wwVpH",
+          "cachedResultName": "request-approval"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Prepare Publish').item.json.row_number }}",
+            "slug": "={{ $('Generate Script').item.json.slug }}",
+            "final_path": "={{ $('Edit Video').item.json.final_path }}",
+            "yt_title": "={{ $('Prepare Publish').item.json.yt_title }}",
+            "yt_description": "={{ $('Prepare Publish').item.json.yt_description }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "slug",
+              "displayName": "slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "final_path",
+              "displayName": "final_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "yt_title",
+              "displayName": "yt_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "yt_description",
+              "displayName": "yt_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2192,
+        -144
+      ],
+      "id": "efb21fb9-2f1b-497a-92c4-18002cd1ac2a",
+      "name": "Request Approval"
     }
   ],
   "pinData": {},
@@ -2102,6 +2185,17 @@
           }
         ]
       ]
+    },
+    "Save Package": {
+      "main": [
+        [
+          {
+            "node": "Request Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -2113,7 +2207,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "6f541b81-1c1d-4ea4-b386-9e8d342bb110",
+  "versionId": "60695c7f-1e55-4905-9334-be2d7812494f",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
