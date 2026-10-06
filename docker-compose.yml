@@ -38,6 +38,7 @@ services:
       RENDER_BASE_URL: ${RENDER_BASE_URL:-http://renderer:8080}
       EDIT_BASE_URL: ${EDIT_BASE_URL:-http://renderer:8080}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      YT_PRIVACY: ${YT_PRIVACY:-private}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./files:/files
