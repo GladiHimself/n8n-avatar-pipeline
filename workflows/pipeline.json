@@ -454,7 +454,7 @@
           "conditions": [
             {
               "id": "6a39a367-0ce0-4261-a88c-4a6669e8fb2d",
-              "leftValue": "={{ ['pending','script_ready','voiced','rendered','edited','packaged'].includes($json.status) }}",
+              "leftValue": "={{ ['pending','script_ready','voiced','rendered','edited','packaged','approved'].includes($json.status) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -601,7 +601,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "75a55f18-a30d-4581-82c8-9ce056faee97",
+  "versionId": "5b5146a4-bbf2-406c-993c-d499ca1d8cb6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"

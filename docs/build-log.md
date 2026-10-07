@@ -261,3 +261,53 @@ comma in a mapping, and video_seconds mapped to description. Including
 so the pending row was never reached. Repeated Gemini 503s on
 gemini-3-flash-preview, so the plan is to move generate-script and
 prepare-publish to a stable Flash model with 5 retries.
+
+## Day 13 — 2026-10-07
+YouTube upload. New publish-video sub-workflow, called by advance-video on
+the `approved` route: Input (row_number, slug, final_path, thumbnail_path,
+yt_title, yt_description, yt_tags) → Read Video → Upload Video (YouTube node,
+privacy from YT_PRIVACY, not made for kids, retry 2 × 5000ms) → Make AI
+content → Read Thumbnail → Set Thumbnail → Publish Result (row_number,
+youtube_id, video_url as youtube.com/shorts/{id}, thumbnail_set,
+published_at). Save Publish writes status published and loops back to Load
+Row like every other stage.
+
+Make AI content is an HTTP PUT to videos?part=status using the YouTube
+OAuth2 credential (Predefined Credential Type). It sets
+containsSyntheticMedia: true, the altered-content label. The PUT replaces
+the whole status block, so privacyStatus and selfDeclaredMadeForKids are sent
+again. Set Thumbnail is a binary POST to thumbnails/set with On Error →
+Continue, so a failed thumbnail never blocks a published video. The AI
+disclosure is still added in code to every description (Build Metadata,
+Day 10).
+
+The Google Cloud project hasn't been audited, so every API upload is forced
+to private whatever the request says. YT_PRIVACY=private in .env makes that
+explicit; switch it to public after the audit. Quota is about 100 units per
+upload plus 50 per thumbnail. YouTube credential created via OAuth2 (same
+Testing-mode app as Sheets, so tokens expire every 7 days until it is
+published).
+
+Day 12 had been skipped, so it was built mid-day. The Day 13 work in progress
+(.env.example, docker-compose.yml) was committed on its own branch, Day 12 was
+built on a fresh branch from main, and main gets merged back into the Day 13
+branch.
+
+Verified: a new row went pending → awaiting_approval → approved via the
+Telegram form → published. Old approved rows published too: all private,
+listed under the Shorts tab in Studio, with the disclosure in the
+description, made-for-kids No and Altered content Yes.
+
+Snags: Error Workflow lives in workflow Settings (⋯ → Settings), not node
+settings. The YouTube node was named "Upload a video", and its output field
+is uploadId, not id. The upload doesn't show under Videos; Shorts have their
+own tab. Limit 3 picks actionable rows top-down, so old approved rows used
+the slots and the new pending row waited for the next run. Row 4 had been
+set to approved by hand with an empty final_path, and Read Video failed with
+"Patterns must be a string (non empty)". Test rows with no files were
+archived. Planned guards: a "Has Final File?" check before publish, and a
+skip when youtube_id is already filled, so a row can't upload twice.
+
+Open: submit the YouTube API audit with a demo screencast (note the date in
+docs/youtube-audit.md), publish the OAuth app to Production, and switch the
+Gemini nodes to a stable Flash model.
