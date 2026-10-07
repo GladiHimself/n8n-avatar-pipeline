@@ -180,3 +180,134 @@ fonts-dejavu-core for captions and title cards.
 
 Known limits: caption timing is estimated, not word-accurate (upgrade path:
 ElevenLabs /with-timestamps). Music must be licensed; never commit it.
+
+## Day 10 — 2026-09-30
+Thumbnail and YouTube metadata. New prepare-publish sub-workflow:
+Input (row_number, slug, topic, title, description, tags) → Thumbnail Copy
+(Gemini chain + Structured Output Parser: 2–4 word thumbnail text + 3
+hashtags) → Build Metadata (Code: title ≤100 chars, no < >, description
+≤5000 with the AI disclosure guaranteed once, #Shorts first, tags kept under
+the 500-character total) → Make Thumbnail → Save Thumbnail (PNG to
+/files/thumbs) → Package Result.
+
+Make Thumbnail calls a new synchronous /v1/thumbnails endpoint on the
+renderer. The response body is the PNG (1280×720), so there's no submit/poll:
+a job that finishes in under a second doesn't need the async pattern.
+
+Pipeline now reaches `packaged`. Sheet gained yt_title, yt_description,
+yt_tags, thumbnail_text and thumbnail_path. The YouTube channel was
+phone-verified so it can set custom thumbnails.
+
+Snags: the Save Thumbnail node was missing, so the run was green but no file
+was written. `$json` used in a "Run Once for All Items" Code node (use
+`$input.first().json`). The Input `tags` field was typed String, not Array;
+pinned data skipped the type check, so it only failed when the pipeline
+called it. Gemini returned 503s, so Thumbnail Copy got retries and On Error →
+Continue, and Build Metadata falls back to title-based text.
+
+## Day 11 — 2026-10-02
+Human approval gate over Telegram. New request-approval workflow, called
+fire-and-forget (Wait For Sub-Workflow Completion OFF) so a slow human never
+blocks the batch: Input → Read Video → Send Preview (Telegram video) → Mark
+Awaiting (status awaiting_approval) → Send Review Link → Wait For Decision
+(Wait node, On Form Submitted: decision dropdown approve / reject /
+regenerate + notes, 24h limit) → Read Decision (Code) → Save Decision →
+Confirm.
+
+Decisions map to statuses: approve → approved, reject → rejected,
+regenerate → pending, no answer in 24h → review_expired. Paused executions
+are stored in Postgres and survive a container restart. request-approval is
+the only sub-workflow with error-alert as its own Error Workflow, because the
+caller doesn't wait and can't catch its errors.
+
+Telegram bot created with BotFather. The token lives only in an n8n
+credential, and TELEGRAM_CHAT_ID is in .env. Sheet gained review_decision,
+review_notes and reviewed_at.
+
+Snags: Telegram rejects localhost URLs on inline buttons ("Wrong HTTP
+URL"), so Send and Wait for Response couldn't work. It was replaced with a
+plain-text message carrying $execution.resumeFormUrl plus a Wait node form.
+The link only opens on the Mac (copy it into the browser) until n8n has a
+public URL. Typing "approve" in the chat does nothing; the decision goes
+through the form.
+
+## Day 12 — 2026-10-06
+Stage resume. The pipeline is now a state machine driven by the sheet's
+status column, so a failure late in the run no longer repeats paid work.
+
+New advance-video sub-workflow, called once per row: Input (row_number) →
+Load Row → This Row (filter) → Step Guard (If $runIndex < 8, else Too Many
+Steps) → Stage Router (Switch on status) → exactly one stage → its Save node
+→ back to Load Row. The routes are pending → script, script_ready → voice,
+voiced → render, rendered → edit, edited → package, packaged → approval (end).
+Every stage reads its inputs from the saved row, not from earlier nodes, so
+a run can start at any stage. cta is now saved to the sheet for that reason.
+
+Record Failure catches errors from every stage and writes status failed plus
+failed_stage. To resume, copy failed_stage back into status.
+
+pipeline slimmed to Manual Trigger → Read Calendar (all rows) → Actionable
+(Filter: status in the actionable list) → Limit → Advance Video, with Mark
+Failed as a backstop. Attempt To Convert Types is ON on every Execute
+Workflow node, because Sheets values can arrive as strings.
+
+Verified: a row at `edited` jumped straight to Prepare Publish, and script,
+voice, render and edit were skipped.
+
+Snags: the This Row filter used a String operator on numbers. Stage Router
+rules had node names in the value field and needed fx on the left. A stray
+comma in a mapping, and video_seconds mapped to description. Including
+`approved` in Actionable before its route existed used up the Limit slots,
+so the pending row was never reached. Repeated Gemini 503s on
+gemini-3-flash-preview, so the plan is to move generate-script and
+prepare-publish to a stable Flash model with 5 retries.
+
+## Day 13 — 2026-10-07
+YouTube upload. New publish-video sub-workflow, called by advance-video on
+the `approved` route: Input (row_number, slug, final_path, thumbnail_path,
+yt_title, yt_description, yt_tags) → Read Video → Upload Video (YouTube node,
+privacy from YT_PRIVACY, not made for kids, retry 2 × 5000ms) → Make AI
+content → Read Thumbnail → Set Thumbnail → Publish Result (row_number,
+youtube_id, video_url as youtube.com/shorts/{id}, thumbnail_set,
+published_at). Save Publish writes status published and loops back to Load
+Row like every other stage.
+
+Make AI content is an HTTP PUT to videos?part=status using the YouTube
+OAuth2 credential (Predefined Credential Type). It sets
+containsSyntheticMedia: true, the altered-content label. The PUT replaces
+the whole status block, so privacyStatus and selfDeclaredMadeForKids are sent
+again. Set Thumbnail is a binary POST to thumbnails/set with On Error →
+Continue, so a failed thumbnail never blocks a published video. The AI
+disclosure is still added in code to every description (Build Metadata,
+Day 10).
+
+The Google Cloud project hasn't been audited, so every API upload is forced
+to private whatever the request says. YT_PRIVACY=private in .env makes that
+explicit; switch it to public after the audit. Quota is about 100 units per
+upload plus 50 per thumbnail. YouTube credential created via OAuth2 (same
+Testing-mode app as Sheets, so tokens expire every 7 days until it is
+published).
+
+Day 12 had been skipped, so it was built mid-day. The Day 13 work in progress
+(.env.example, docker-compose.yml) was committed on its own branch, Day 12 was
+built on a fresh branch from main, and main gets merged back into the Day 13
+branch.
+
+Verified: a new row went pending → awaiting_approval → approved via the
+Telegram form → published. Old approved rows published too: all private,
+listed under the Shorts tab in Studio, with the disclosure in the
+description, made-for-kids No and Altered content Yes.
+
+Snags: Error Workflow lives in workflow Settings (⋯ → Settings), not node
+settings. The YouTube node was named "Upload a video", and its output field
+is uploadId, not id. The upload doesn't show under Videos; Shorts have their
+own tab. Limit 3 picks actionable rows top-down, so old approved rows used
+the slots and the new pending row waited for the next run. Row 4 had been
+set to approved by hand with an empty final_path, and Read Video failed with
+"Patterns must be a string (non empty)". Test rows with no files were
+archived. Planned guards: a "Has Final File?" check before publish, and a
+skip when youtube_id is already filled, so a row can't upload twice.
+
+Open: submit the YouTube API audit with a demo screencast (note the date in
+docs/youtube-audit.md), publish the OAuth app to Production, and switch the
+Gemini nodes to a stable Flash model.

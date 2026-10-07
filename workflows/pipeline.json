@@ -2,67 +2,13 @@
   "name": "pipeline",
   "nodes": [
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        -688,
-        -64
-      ],
-      "id": "65749987-e583-4887-b858-75fa6a69aff1",
-      "name": "When clicking ‘Execute workflow’"
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
-          "mode": "list",
-          "cachedResultName": "Content Calendar",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "videos",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
-        },
-        "filtersUI": {
-          "values": [
-            {
-              "lookupColumn": "status",
-              "lookupValue": "pending"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        -496,
-        -64
-      ],
-      "id": "dc852a4d-e5d4-4ec0-8da9-be00c64878ce",
-      "name": "Next Topic",
-      "retryOnFail": true,
-      "waitBetweenTries": 2000,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "4DCSgHCLoMQOYUeV",
-          "name": "Google — avatar pipeline"
-        }
-      }
-    },
-    {
       "parameters": {
         "maxItems": 3
       },
       "type": "n8n-nodes-base.limit",
       "typeVersion": 1,
       "position": [
-        -320,
+        -48,
         -64
       ],
       "id": "9c6830b8-6002-47bf-97c1-b5f85b9dec66",
@@ -88,14 +34,10 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "row_number": "={{ $json.row_number }}",
-            "status": "script_ready",
-            "title": "={{ $json.title }}",
-            "description": "={{ $json.description }}",
-            "tags": "={{ $json.tags.join(', ') }}",
-            "narration": "={{ $json.narration }}",
-            "slug": "={{ $json.slug }}",
-            "script_generated_at": "={{ $json.generated_at }}"
+            "row_number": "={{ $('Limit').item.json.row_number }}",
+            "status": "failed",
+            "error": "={{ ($json.error?.message ?? $json.error ?? 'unknown error').toString().replace(/ \\[line \\d+\\]$/, '') }}",
+            "failed_stage": "={{ $('Limit').item.json.status }}"
           },
           "matchingColumns": [
             "row_number"
@@ -108,7 +50,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "topic",
@@ -149,185 +92,6 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": true
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "description",
-              "displayName": "description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "tags",
-              "displayName": "tags",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "narration",
-              "displayName": "narration",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "script_generated_at",
-              "displayName": "script_generated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "video_url",
-              "displayName": "video_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "error",
-              "displayName": "error",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": true,
-              "readOnly": true,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        112,
-        -80
-      ],
-      "id": "ca5ca956-2df3-4af6-a06f-2cc90ce8d420",
-      "name": "Save Script",
-      "retryOnFail": true,
-      "waitBetweenTries": 2000,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "4DCSgHCLoMQOYUeV",
-          "name": "Google — avatar pipeline"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "AQR5yeyjAp4KzMbg",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/AQR5yeyjAp4KzMbg",
-          "cachedResultName": "generate-script"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $json.row_number }}",
-            "topic": "={{ $json.topic }}",
-            "audience": "={{ $json.audience }}",
-            "tone": "={{ $json.tone }}",
-            "target_seconds": "={{ $json.target_seconds }}",
-            "region": "={{ $json.region }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number",
-              "removed": false
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "audience",
-              "displayName": "audience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tone",
-              "displayName": "tone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "target_seconds",
-              "displayName": "target_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number",
-              "removed": false
             },
             {
               "id": "region",
@@ -335,100 +99,6 @@
               "required": false,
               "defaultMatch": false,
               "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "mode": "each",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        -144,
-        -64
-      ],
-      "id": "41e6e9df-b48e-44b5-9122-6772b456a357",
-      "name": "Generate Script",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "documentId": {
-          "__rl": true,
-          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
-          "mode": "list",
-          "cachedResultName": "Content Calendar",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "videos",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $('Limit').item.json.row_number }}",
-            "status": "failed",
-            "error": "={{ ($json.error?.message ?? $json.error ?? 'unknown error').toString().replace(/ \\[line \\d+\\]$/, '') }}"
-          },
-          "matchingColumns": [
-            "row_number"
-          ],
-          "schema": [
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audience",
-              "displayName": "audience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tone",
-              "displayName": "tone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "target_seconds",
-              "displayName": "target_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": true
@@ -494,6 +164,26 @@
               "removed": true
             },
             {
+              "id": "audio_path",
+              "displayName": "audio_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "voice_chars",
+              "displayName": "voice_chars",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
               "id": "video_url",
               "displayName": "video_url",
               "required": false,
@@ -510,7 +200,178 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "video_path",
+              "displayName": "video_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "render_id",
+              "displayName": "render_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "video_seconds",
+              "displayName": "video_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "final_path",
+              "displayName": "final_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "final_seconds",
+              "displayName": "final_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_title",
+              "displayName": "yt_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_description",
+              "displayName": "yt_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "yt_tags",
+              "displayName": "yt_tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "thumbnail_text",
+              "displayName": "thumbnail_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "thumbnail_path",
+              "displayName": "thumbnail_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "review_decision",
+              "displayName": "review_decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "review_notes",
+              "displayName": "review_notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "reviewed_at",
+              "displayName": "reviewed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "cta",
+              "displayName": "cta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "failed_stage",
+              "displayName": "failed_stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "youtube_id",
+              "displayName": "youtube_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "published_at",
+              "displayName": "published_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
             },
             {
               "id": "row_number",
@@ -532,8 +393,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        352,
-        240
+        400,
+        80
       ],
       "id": "fab3e8bf-50fc-4b2b-9c29-3072d91a7ef3",
       "name": "Mark Failed",
@@ -548,69 +409,6 @@
     },
     {
       "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "YKMT9vhYX6pcLvuL",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/YKMT9vhYX6pcLvuL",
-          "cachedResultName": "generate-voice"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $('Generate Script').item.json.row_number }}",
-            "slug": "={{ $('Generate Script').item.json.slug }}",
-            "narration": "={{ $('Generate Script').item.json.narration }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number"
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "narration",
-              "displayName": "narration",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "mode": "each",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        336,
-        -80
-      ],
-      "id": "687fe344-e6de-473d-a0ab-da826db35e91",
-      "name": "Generate Voice",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "operation": "update",
         "documentId": {
           "__rl": true,
           "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
@@ -625,200 +423,16 @@
           "cachedResultName": "videos",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
         },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $json.row_number }}",
-            "status": "voiced",
-            "audio_path": "={{ $json.audio_path }}",
-            "voice_chars": "={{ $json.voice_chars }}"
-          },
-          "matchingColumns": [
-            "row_number"
-          ],
-          "schema": [
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audience",
-              "displayName": "audience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tone",
-              "displayName": "tone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "target_seconds",
-              "displayName": "target_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "region",
-              "displayName": "region",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "description",
-              "displayName": "description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tags",
-              "displayName": "tags",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "narration",
-              "displayName": "narration",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "script_generated_at",
-              "displayName": "script_generated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audio_path",
-              "displayName": "audio_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "voice_chars",
-              "displayName": "voice_chars",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "video_url",
-              "displayName": "video_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "error",
-              "displayName": "error",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": true,
-              "readOnly": true,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
         "options": {}
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        560,
-        -96
+        -464,
+        -64
       ],
-      "id": "5fa4bf44-d004-4cc4-828e-24c53d4b3502",
-      "name": "Save Voice",
+      "id": "dc852a4d-e5d4-4ec0-8da9-be00c64878ce",
+      "name": "Read Calendar",
       "retryOnFail": true,
       "waitBetweenTries": 2000,
       "credentials": {
@@ -830,815 +444,61 @@
     },
     {
       "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "1qYegdA6pNN1gnie",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/1qYegdA6pNN1gnie",
-          "cachedResultName": "render-avatar"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $('Generate Voice').item.json.row_number }}",
-            "slug": "={{ $('Generate Script').item.json.slug }}",
-            "audio_path": "={{ $('Generate Voice').item.json.audio_path }}"
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
           },
-          "matchingColumns": [],
-          "schema": [
+          "conditions": [
             {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number"
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "audio_path",
-              "displayName": "audio_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
+              "id": "6a39a367-0ce0-4261-a88c-4a6669e8fb2d",
+              "leftValue": "={{ ['pending','script_ready','voiced','rendered','edited','packaged','approved'].includes($json.status) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
           ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
+          "combinator": "and"
         },
-        "mode": "each",
         "options": {}
       },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
       "position": [
-        784,
-        -96
+        -256,
+        -64
       ],
-      "id": "256bdb7d-7b21-43a9-bb81-dbc9ff038a7b",
-      "name": "Render Avatar",
-      "onError": "continueErrorOutput"
+      "id": "0237b2ab-12d9-4d58-9df6-7ef9093dab0e",
+      "name": "Actionable"
     },
     {
-      "parameters": {
-        "operation": "update",
-        "documentId": {
-          "__rl": true,
-          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
-          "mode": "list",
-          "cachedResultName": "Content Calendar",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "videos",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $json.row_number }}",
-            "status": "rendered",
-            "video_path": "={{ $json.video_path }}",
-            "render_id": "={{ $json.render_id }}",
-            "video_seconds": "={{ $json.video_seconds }}"
-          },
-          "matchingColumns": [
-            "row_number"
-          ],
-          "schema": [
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audience",
-              "displayName": "audience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tone",
-              "displayName": "tone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "target_seconds",
-              "displayName": "target_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "region",
-              "displayName": "region",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "description",
-              "displayName": "description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tags",
-              "displayName": "tags",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "narration",
-              "displayName": "narration",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "script_generated_at",
-              "displayName": "script_generated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audio_path",
-              "displayName": "audio_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "voice_chars",
-              "displayName": "voice_chars",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_url",
-              "displayName": "video_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "error",
-              "displayName": "error",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_path",
-              "displayName": "video_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "render_id",
-              "displayName": "render_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "video_seconds",
-              "displayName": "video_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": true,
-              "readOnly": true,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
       "position": [
-        1008,
-        -112
+        -688,
+        -64
       ],
-      "id": "0bac8eba-28e1-4f81-a616-b0795fe49464",
-      "name": "Save Render",
-      "retryOnFail": true,
-      "waitBetweenTries": 2000,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "4DCSgHCLoMQOYUeV",
-          "name": "Google — avatar pipeline"
-        }
-      }
+      "id": "65749987-e583-4887-b858-75fa6a69aff1",
+      "name": "Manual Trigger"
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
-          "value": "d26FMrUc0wb2JhLN",
+          "value": "PtJ65yBBHknzuiMS",
           "mode": "list",
-          "cachedResultUrl": "/workflow/d26FMrUc0wb2JhLN",
-          "cachedResultName": "edit-video"
+          "cachedResultUrl": "/workflow/PtJ65yBBHknzuiMS",
+          "cachedResultName": "advance-video"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "row_number": "={{ $('Render Avatar').item.json.row_number }}",
-            "slug": "={{ $('Generate Script').item.json.slug }}",
-            "video_path": "={{ $('Render Avatar').item.json.video_path }}",
-            "title": "={{ $('Generate Script').item.json.title }}",
-            "narration": "={{ $('Generate Script').item.json.narration }}",
-            "cta": "={{ $('Generate Script').item.json.cta }}",
-            "video_seconds": "={{ $('Render Avatar').item.json.video_seconds }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number"
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "video_path",
-              "displayName": "video_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "narration",
-              "displayName": "narration",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "cta",
-              "displayName": "cta",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "video_seconds",
-              "displayName": "video_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number"
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "mode": "each",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        1232,
-        -112
-      ],
-      "id": "464e1aff-c720-43f4-aac7-548531a1b6f8",
-      "name": "Edit Video",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "documentId": {
-          "__rl": true,
-          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
-          "mode": "list",
-          "cachedResultName": "Content Calendar",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "videos",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $json.row_number }}",
-            "status": "edited",
-            "final_path": "={{ $json.final_path }}",
-            "final_seconds": "={{ $json.final_seconds }}"
-          },
-          "matchingColumns": [
-            "row_number"
-          ],
-          "schema": [
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audience",
-              "displayName": "audience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tone",
-              "displayName": "tone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "target_seconds",
-              "displayName": "target_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "region",
-              "displayName": "region",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "description",
-              "displayName": "description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tags",
-              "displayName": "tags",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "narration",
-              "displayName": "narration",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "script_generated_at",
-              "displayName": "script_generated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audio_path",
-              "displayName": "audio_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "voice_chars",
-              "displayName": "voice_chars",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_url",
-              "displayName": "video_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "error",
-              "displayName": "error",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_path",
-              "displayName": "video_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "render_id",
-              "displayName": "render_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_seconds",
-              "displayName": "video_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "final_path",
-              "displayName": "final_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "final_seconds",
-              "displayName": "final_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": true,
-              "readOnly": true,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        1488,
-        -128
-      ],
-      "id": "53e7286a-de78-4fe4-932d-4cfb7461aaf8",
-      "name": "Save Edit",
-      "retryOnFail": true,
-      "waitBetweenTries": 2000,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "4DCSgHCLoMQOYUeV",
-          "name": "Google — avatar pipeline"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "2zutNtGQxWIr22tl",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/2zutNtGQxWIr22tl",
-          "cachedResultName": "prepare-publish"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $('Edit Video').item.json.row_number }}",
-            "slug": "={{ $('Generate Script').item.json.slug }}",
-            "title": "={{ $('Generate Script').item.json.title }}",
-            "description": "={{ $('Generate Script').item.json.description }}",
-            "tags": "={{ $('Generate Script').item.json.tags }}",
-            "topic": "={{ $('Generate Script').item.json.topic }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number",
-              "removed": false
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "description",
-              "displayName": "description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tags",
-              "displayName": "tags",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "array",
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "mode": "each",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        1712,
-        -128
-      ],
-      "id": "b36708ff-45a8-45cc-926a-43148e4eac81",
-      "name": "Prepare Publish",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "documentId": {
-          "__rl": true,
-          "value": "1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc",
-          "mode": "list",
-          "cachedResultName": "Content Calendar",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "videos",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A8PLijV2yNqp6D5lTteQrVYrBZ-k1osyXxhaCbSFxOc/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "packaged",
-            "yt_title": "={{ $json.yt_title }}",
-            "yt_description": "={{ $json.yt_description }}",
-            "yt_tags": "={{ $json.yt_tags.join(', ') }}",
-            "thumbnail_text": "={{ $json.thumbnail_text }}",
-            "thumbnail_path": "={{ $json.thumbnail_path }}",
             "row_number": "={{ $json.row_number }}"
           },
           "matchingColumns": [
@@ -1646,391 +506,58 @@
           ],
           "schema": [
             {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audience",
-              "displayName": "audience",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tone",
-              "displayName": "tone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "target_seconds",
-              "displayName": "target_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "region",
-              "displayName": "region",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "description",
-              "displayName": "description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "tags",
-              "displayName": "tags",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "narration",
-              "displayName": "narration",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "script_generated_at",
-              "displayName": "script_generated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "audio_path",
-              "displayName": "audio_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "voice_chars",
-              "displayName": "voice_chars",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_url",
-              "displayName": "video_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "error",
-              "displayName": "error",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_path",
-              "displayName": "video_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "render_id",
-              "displayName": "render_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "video_seconds",
-              "displayName": "video_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "final_path",
-              "displayName": "final_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "final_seconds",
-              "displayName": "final_seconds",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "yt_title",
-              "displayName": "yt_title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "yt_description",
-              "displayName": "yt_description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "yt_tags",
-              "displayName": "yt_tags",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "thumbnail_text",
-              "displayName": "thumbnail_text",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "thumbnail_path",
-              "displayName": "thumbnail_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
               "id": "row_number",
               "displayName": "row_number",
               "required": false,
               "defaultMatch": false,
               "display": true,
-              "type": "number",
               "canBeUsedToMatch": true,
-              "readOnly": true,
+              "type": "number",
               "removed": false
             }
           ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        1968,
-        -144
-      ],
-      "id": "e76c6912-427b-4efb-8366-87a81838626e",
-      "name": "Save Package",
-      "retryOnFail": true,
-      "waitBetweenTries": 2000,
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "4DCSgHCLoMQOYUeV",
-          "name": "Google — avatar pipeline"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "0M3ShZmwhV4wwVpH",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/0M3ShZmwhV4wwVpH",
-          "cachedResultName": "request-approval"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_number": "={{ $('Prepare Publish').item.json.row_number }}",
-            "slug": "={{ $('Generate Script').item.json.slug }}",
-            "final_path": "={{ $('Edit Video').item.json.final_path }}",
-            "yt_title": "={{ $('Prepare Publish').item.json.yt_title }}",
-            "yt_description": "={{ $('Prepare Publish').item.json.yt_description }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number"
-            },
-            {
-              "id": "slug",
-              "displayName": "slug",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "final_path",
-              "displayName": "final_path",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "yt_title",
-              "displayName": "yt_title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "yt_description",
-              "displayName": "yt_description",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            }
-          ],
-          "attemptToConvertTypes": false,
+          "attemptToConvertTypes": true,
           "convertFieldsToString": true
         },
         "mode": "each",
-        "options": {
-          "waitForSubWorkflow": false
-        }
+        "options": {}
       },
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        2192,
-        -144
+        176,
+        -64
       ],
-      "id": "efb21fb9-2f1b-497a-92c4-18002cd1ac2a",
-      "name": "Request Approval"
+      "id": "ce94dbf9-5ee2-4534-9331-f27920513117",
+      "name": "Advance Video",
+      "onError": "continueErrorOutput"
     }
   ],
   "pinData": {},
   "connections": {
-    "When clicking ‘Execute workflow’": {
+    "Limit": {
       "main": [
         [
           {
-            "node": "Next Topic",
+            "node": "Advance Video",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Next Topic": {
+    "Read Calendar": {
+      "main": [
+        [
+          {
+            "node": "Actionable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actionable": {
       "main": [
         [
           {
@@ -2041,156 +568,23 @@
         ]
       ]
     },
-    "Limit": {
+    "Manual Trigger": {
       "main": [
         [
           {
-            "node": "Generate Script",
+            "node": "Read Calendar",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate Script": {
+    "Advance Video": {
       "main": [
-        [
-          {
-            "node": "Save Script",
-            "type": "main",
-            "index": 0
-          }
-        ],
+        [],
         [
           {
             "node": "Mark Failed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Script": {
-      "main": [
-        [
-          {
-            "node": "Generate Voice",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate Voice": {
-      "main": [
-        [
-          {
-            "node": "Save Voice",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Mark Failed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Voice": {
-      "main": [
-        [
-          {
-            "node": "Render Avatar",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Render Avatar": {
-      "main": [
-        [
-          {
-            "node": "Save Render",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Mark Failed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Render": {
-      "main": [
-        [
-          {
-            "node": "Edit Video",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Edit Video": {
-      "main": [
-        [
-          {
-            "node": "Save Edit",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Mark Failed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Edit": {
-      "main": [
-        [
-          {
-            "node": "Prepare Publish",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Publish": {
-      "main": [
-        [
-          {
-            "node": "Save Package",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Mark Failed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Package": {
-      "main": [
-        [
-          {
-            "node": "Request Approval",
             "type": "main",
             "index": 0
           }
@@ -2207,7 +601,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "60695c7f-1e55-4905-9334-be2d7812494f",
+  "versionId": "5b5146a4-bbf2-406c-993c-d499ca1d8cb6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"

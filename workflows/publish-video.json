@@ -1,0 +1,296 @@
+{
+  "name": "publish-video",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "row_number",
+              "type": "number"
+            },
+            {
+              "name": "slug"
+            },
+            {
+              "name": "final_path"
+            },
+            {
+              "name": "thumbnail_path"
+            },
+            {
+              "name": "yt_title"
+            },
+            {
+              "name": "yt_description"
+            },
+            {
+              "name": "yt_tags"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3319cbfe-b148-4791-8648-0409ff180e26",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.final_path }}",
+        "options": {
+          "dataPropertyName": "video"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "87267ba8-1c3a-4c5e-9876-e5280c056ff1",
+      "name": "Read Video"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://www.googleapis.com/youtube/v3/videos?part=status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ id: $('Upload Video').first().json.uploadId, status: { privacyStatus: $env.YT_PRIVACY, selfDeclaredMadeForKids: false, containsSyntheticMedia: true } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "4dc6a19f-cb7e-4984-83a9-dbf455703300",
+      "name": "Make AI content",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "5OxW9bFpiQgoLUQb",
+          "name": "YouTube — avatar pipeline"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Input').first().json.thumbnail_path }}",
+        "options": {
+          "dataPropertyName": "thumb"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "edf4af7d-757e-478e-8b52-f1cff474fa1c",
+      "name": "Read Thumbnail"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={{ $('Upload Video').first().json.uploadId }}&uploadType=media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "thumb",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "d1d53a77-f9a4-49f8-9e2f-826c6a3936d4",
+      "name": "Set Thumbnail",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "5OxW9bFpiQgoLUQb",
+          "name": "YouTube — avatar pipeline"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "62cc3504-46fe-4697-af8c-58de8bd00338",
+              "name": "row_number",
+              "value": "={{ $('Input').first().json.row_number }}",
+              "type": "number"
+            },
+            {
+              "id": "9dd3ffe5-fd09-4bfe-95c4-677004ac8fee",
+              "name": "youtube_id",
+              "value": "={{ $('Upload Video').first().json.uploadId }}",
+              "type": "string"
+            },
+            {
+              "id": "4ab3305e-00da-4f89-b4de-789b34c904f7",
+              "name": "video_url",
+              "value": "=https://www.youtube.com/shorts/{{ $('Upload Video').first().json.uploadId }}",
+              "type": "string"
+            },
+            {
+              "id": "d12d070c-8410-4652-aa75-7ff9307d0902",
+              "name": "thumbnail_set",
+              "value": "={{ !$('Set Thumbnail').first().json.error }}",
+              "type": "boolean"
+            },
+            {
+              "id": "8173d94d-9388-43a0-a56c-7394770124e3",
+              "name": "published_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "d109e3f8-9ce2-4c48-ae5e-44a7f58e6694",
+      "name": "Publish Result"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Input').first().json.yt_title }}",
+        "regionCode": "IN",
+        "categoryId": "22",
+        "binaryProperty": "video",
+        "options": {
+          "description": "={{ $('Input').first().json.yt_description }}",
+          "notifySubscribers": false,
+          "privacyStatus": "={{ $env.YT_PRIVACY }}",
+          "selfDeclaredMadeForKids": false,
+          "tags": "={{ $('Input').first().json.yt_tags }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "8ed9b1cd-b395-4e5f-bf63-3104a6f42027",
+      "name": "Upload Video",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "5OxW9bFpiQgoLUQb",
+          "name": "YouTube — avatar pipeline"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Read Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video": {
+      "main": [
+        [
+          {
+            "node": "Upload Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make AI content": {
+      "main": [
+        [
+          {
+            "node": "Read Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Set Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Publish Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video": {
+      "main": [
+        [
+          {
+            "node": "Make AI content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "df67bd6d-9262-45d6-b3a4-2afc309c249d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6ca258c39d0fda86ab367d667f5a2641ffcd69d8392af7401d1d96bfb1223759"
+  },
+  "nodeGroups": [],
+  "id": "qnP0gQxETPnywPZQ",
+  "tags": []
+}
