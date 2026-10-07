@@ -180,3 +180,84 @@ fonts-dejavu-core for captions and title cards.
 
 Known limits: caption timing is estimated, not word-accurate (upgrade path:
 ElevenLabs /with-timestamps). Music must be licensed; never commit it.
+
+## Day 10 — 2026-09-30
+Thumbnail and YouTube metadata. New prepare-publish sub-workflow:
+Input (row_number, slug, topic, title, description, tags) → Thumbnail Copy
+(Gemini chain + Structured Output Parser: 2–4 word thumbnail text + 3
+hashtags) → Build Metadata (Code: title ≤100 chars, no < >, description
+≤5000 with the AI disclosure guaranteed once, #Shorts first, tags kept under
+the 500-character total) → Make Thumbnail → Save Thumbnail (PNG to
+/files/thumbs) → Package Result.
+
+Make Thumbnail calls a new synchronous /v1/thumbnails endpoint on the
+renderer. The response body is the PNG (1280×720), so there's no submit/poll:
+a job that finishes in under a second doesn't need the async pattern.
+
+Pipeline now reaches `packaged`. Sheet gained yt_title, yt_description,
+yt_tags, thumbnail_text and thumbnail_path. The YouTube channel was
+phone-verified so it can set custom thumbnails.
+
+Snags: the Save Thumbnail node was missing, so the run was green but no file
+was written. `$json` used in a "Run Once for All Items" Code node (use
+`$input.first().json`). The Input `tags` field was typed String, not Array;
+pinned data skipped the type check, so it only failed when the pipeline
+called it. Gemini returned 503s, so Thumbnail Copy got retries and On Error →
+Continue, and Build Metadata falls back to title-based text.
+
+## Day 11 — 2026-10-02
+Human approval gate over Telegram. New request-approval workflow, called
+fire-and-forget (Wait For Sub-Workflow Completion OFF) so a slow human never
+blocks the batch: Input → Read Video → Send Preview (Telegram video) → Mark
+Awaiting (status awaiting_approval) → Send Review Link → Wait For Decision
+(Wait node, On Form Submitted: decision dropdown approve / reject /
+regenerate + notes, 24h limit) → Read Decision (Code) → Save Decision →
+Confirm.
+
+Decisions map to statuses: approve → approved, reject → rejected,
+regenerate → pending, no answer in 24h → review_expired. Paused executions
+are stored in Postgres and survive a container restart. request-approval is
+the only sub-workflow with error-alert as its own Error Workflow, because the
+caller doesn't wait and can't catch its errors.
+
+Telegram bot created with BotFather. The token lives only in an n8n
+credential, and TELEGRAM_CHAT_ID is in .env. Sheet gained review_decision,
+review_notes and reviewed_at.
+
+Snags: Telegram rejects localhost URLs on inline buttons ("Wrong HTTP
+URL"), so Send and Wait for Response couldn't work. It was replaced with a
+plain-text message carrying $execution.resumeFormUrl plus a Wait node form.
+The link only opens on the Mac (copy it into the browser) until n8n has a
+public URL. Typing "approve" in the chat does nothing; the decision goes
+through the form.
+
+## Day 12 — 2026-10-06
+Stage resume. The pipeline is now a state machine driven by the sheet's
+status column, so a failure late in the run no longer repeats paid work.
+
+New advance-video sub-workflow, called once per row: Input (row_number) →
+Load Row → This Row (filter) → Step Guard (If $runIndex < 8, else Too Many
+Steps) → Stage Router (Switch on status) → exactly one stage → its Save node
+→ back to Load Row. The routes are pending → script, script_ready → voice,
+voiced → render, rendered → edit, edited → package, packaged → approval (end).
+Every stage reads its inputs from the saved row, not from earlier nodes, so
+a run can start at any stage. cta is now saved to the sheet for that reason.
+
+Record Failure catches errors from every stage and writes status failed plus
+failed_stage. To resume, copy failed_stage back into status.
+
+pipeline slimmed to Manual Trigger → Read Calendar (all rows) → Actionable
+(Filter: status in the actionable list) → Limit → Advance Video, with Mark
+Failed as a backstop. Attempt To Convert Types is ON on every Execute
+Workflow node, because Sheets values can arrive as strings.
+
+Verified: a row at `edited` jumped straight to Prepare Publish, and script,
+voice, render and edit were skipped.
+
+Snags: the This Row filter used a String operator on numbers. Stage Router
+rules had node names in the value field and needed fx on the left. A stray
+comma in a mapping, and video_seconds mapped to description. Including
+`approved` in Actionable before its route existed used up the Limit slots,
+so the pending row was never reached. Repeated Gemini 503s on
+gemini-3-flash-preview, so the plan is to move generate-script and
+prepare-publish to a stable Flash model with 5 retries.
