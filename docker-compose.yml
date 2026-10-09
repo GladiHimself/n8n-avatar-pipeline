@@ -27,8 +27,9 @@ services:
       DB_POSTGRESDB_USER: n8n
       DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
-      GENERIC_TIMEZONE: Asia/Kolkata
-      TZ: Asia/Kolkata
+      # Schedules run in this IANA timezone (e.g. Europe/Dublin). Set in .env; falls back to UTC.
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+      TZ: ${GENERIC_TIMEZONE:-UTC}
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_DEFAULT_BINARY_DATA_MODE: filesystem
       N8N_RESTRICT_FILE_ACCESS_TO: /files
