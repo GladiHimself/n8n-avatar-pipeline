@@ -311,3 +311,56 @@ skip when youtube_id is already filled, so a row can't upload twice.
 Open: submit the YouTube API audit with a demo screencast (note the date in
 docs/youtube-audit.md), publish the OAuth app to Production, and switch the
 Gemini nodes to a stable Flash model.
+
+## Day 14 — 2026-10-09
+Scheduled, unattended runs. pipeline now has a Schedule Trigger (Custom cron
+`7 10,18 * * *`) beside the Manual Trigger, both feeding Read Calendar. The
+approval gate sets the rhythm: the morning run takes new rows to
+awaiting_approval, a human approves during the day, the evening run
+publishes. Limit is 1 per run until the Day 15 daily cap, so at most 2 new
+videos a day.
+
+A Schedule Trigger only fires while the workflow is Published, and it runs
+the published copy, so every edit needs a re-publish. Missed runs (Mac
+asleep, Docker down) are skipped, not replayed, so the Mac stays awake until
+the pipeline moves to a server.
+
+The timezone is config, not code: `GENERIC_TIMEZONE` (and `TZ`) come from .env
+with a UTC fallback. .env.example stays generic, local .env uses
+Asia/Kolkata, and at handover the client sets their own IANA zone (e.g.
+Europe/Dublin). pipeline Settings → Timezone stays on Default so the env
+var wins. The old hardcoded Asia/Kolkata lines were removed from
+docker-compose.yml (duplicate keys).
+
+New Summarise Run (Code) → Run Summary (Telegram) after Advance Video's
+success output posts "🗓 Pipeline run … Picked: row N (status)", so an
+unattended run leaves proof. On Error → Continue, so a failed summary never
+fails the run. No actionable rows means no summary; the run still shows in
+Executions.
+
+Hardening for unattended use:
+- Gemini moved off the preview model to models/gemini-3.8-flash (stable)
+  in generate-script and prepare-publish, with chains retrying 5 × 5000ms.
+  The free tier is reported at about 20 requests/day; each video uses 2 calls.
+- Google OAuth app moved from Testing to In production (unverified; GitHub
+  repo as home page, docs/privacy-policy.md as privacy policy, github.com
+  as an authorized domain, no logo so no verification). Both Google
+  credentials were reconnected, so refresh tokens no longer expire every 7 days.
+
+Testing used one-off cron times a few minutes ahead (never "every N
+minutes", which would overlap a long render and process the same row
+twice).
+
+Verified hands-off: row 22 went pending → awaiting_approval on a scheduled
+run, was approved via the Telegram form, and the next scheduled run
+published it (private Short l5Ck2Bnk7t8, video_url and published_at filled).
+
+Snags: the Publish app button was greyed out until the Branding page had
+app domain links and `github.com` in Authorized domains. The first scheduled
+attempt failed with a Gemini 503. A `failed` row is not actionable, so it
+isn't retried; resetting status to failed_stage (pending) and clearing error
+fixed it. Auto-retry is Day 15.
+
+Client questions (budget, volume, avatar/voice consent, LLM, hosting,
+accounts, branding, schedule) sent after the demo; the answers are needed
+before Day 17.
